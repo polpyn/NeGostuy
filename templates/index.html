@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>НеГОСТуй - Автоматическое форматирование документов</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/static/styles/style.css" />
+
+    <style>
+      /* ─── Табы ─── */
+      .tab-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin: 20px 0;
+      }
+      .tab-btn {
+        padding: 12px 28px;
+        border: 2px solid #2140F0;
+        border-radius: 12px;
+        background: white;
+        color: #2140F0;
+        font-size: 15px;
+        font-weight: 600;
+        font-family: 'Roboto', sans-serif;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .tab-btn:hover { background: #EEF1FF; }
+      .tab-btn.active {
+        background: #2140F0;
+        color: white;
+      }
+
+      /* ─── Форма титульного листа ─── */
+      .title-form-wrapper {
+        max-width: 700px;
+        margin: 0 auto;
+        background: #F4F6FF;
+        border-radius: 16px;
+        padding: 32px;
+        border: 1px solid #C2CDFF;
+      }
+      .title-form-wrapper h3 {
+        text-align: center;
+        color: #2140F0;
+        margin-bottom: 24px;
+        font-size: 20px;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+      .form-group.full {
+        grid-column: 1 / -1;
+      }
+      .form-group label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 4px;
+      }
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        padding: 10px 14px;
+        border: 1px solid #C2CDFF;
+        border-radius: 10px;
+        font-size: 14px;
+        font-family: 'Roboto', sans-serif;
+        background: white;
+        outline: none;
+        transition: border 0.2s;
+      }
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        border-color: #2140F0;
+      }
+      .form-group textarea {
+        resize: vertical;
+        min-height: 60px;
+      }
+
+      .title-template-section {
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid #C2CDFF;
+      }
+      .title-template-section h4 {
+        color: #2140F0;
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+
+      .generate-btn {
+        display: block;
+        width: 100%;
+        margin-top: 24px;
+        padding: 14px;
+        background: #2140F0;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 700;
+        font-family: 'Roboto', sans-serif;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .generate-btn:hover { background: #1a33c0; }
+      .generate-btn:disabled {
+        background: #aaa;
+        cursor: not-allowed;
+      }
+
+      .title-error {
+        color: #e53935;
+        margin-top: 12px;
+        text-align: center;
+        font-size: 14px;
+        display: none;
+      }
+      .title-success {
+        color: #4CAF50;
+        margin-top: 12px;
+        text-align: center;
+        font-size: 14px;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="main">
+      <!-- Header -->
+      <header class="header">
+        <div class="container">
+          <div class="logo">
+            <img src="/static/images/logo.svg" alt="НеГОСТуй"/>
+          </div>
+          <nav class="menu">
+            <ul>
+              <li><a href="#inform">О сайте</a></li>
+              <li><a href="#footer">Контакты</a></li>
+            </ul>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <section class="main-content">
+        <div class="container">
+          <div class="main-info">
+            <h1>Не тратьте время на оформление.<br>Тратьте его на содержание!</h1>
+          </div>
+
+          <!-- ═══ ТАБЫ ═══ -->
+          <div class="tab-buttons">
+            <button class="tab-btn active" id="tabBtnCheck" onclick="showTab('check')">
+              📄 Проверка документа
+            </button>
+            <button class="tab-btn" id="tabBtnTitle" onclick="showTab('title')">
+              📝 Титульный лист
+            </button>
+          </div>
+
+          <!-- ═══════════════════════════════════════════ -->
+          <!-- ТАБ 1: ПРОВЕРКА ДОКУМЕНТА (существующий) -->
+          <!-- ═══════════════════════════════════════════ -->
+          <div id="checkTab">
+            <div class="text">
+              <div><h4>Загрузка</h4></div>
+              <div><h4>Результат</h4></div>
+            </div>
+
+            <div class="nearby">
+              <!-- ЛЕВЫЙ БЛОК -->
+              <div class="loading-items">
+                <article class="loading">
+                  <div class="loading-details">
+                    <div class="upload-section">
+                      <h4 style="color: #2140F0; margin-bottom: 8px;">📄 Документ (.docx)</h4>
+                      <div class="loading-action">
+                        <label class="custom-file-upload">
+                          <img src="/static/images/button.svg" alt="Загрузить документ" />
+                          <input type="file" id="fileInput" accept=".docx"/>
+                        </label>
+                      </div>
+                      <p id="fileName" class="file-name"></p>
+                    </div>
+
+                    <div class="upload-section" style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #C2CDFF;">
+                      <h4 style="color: #2140F0; margin-bottom: 8px;">🖼️ Рамка (необязательно)</h4>
+                      <div class="loading-action">
+                        <label class="custom-file-upload template-upload">
+                          <span class="template-btn">Выбрать рамку .docx</span>
+                          <input type="file" id="templateInput" accept=".docx"/>
+                        </label>
+                      </div>
+                      <p id="templateName" class="file-name"></p>
+                    </div>
+
+                    <button id="submitBtn" class="submit-btn" style="display: none;">
+                      🚀 Проверить и исправить
+                    </button>
+                    <div id="errorMessage" class="error-message"></div>
+                  </div>
+                </article>
+              </div>
+
+              <!-- ПРАВЫЙ БЛОК -->
+              <div class="loading-items">
+                <article class="loading">
+                  <div class="loading-details" id="resultArea">
+                    <p id="resultText">Результаты анализа появятся здесь</p>
+                    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+                      <div class="spinner"></div>
+                      <p>Анализируем документ...</p>
+                    </div>
+                    <div id="analysisResults" style="display: none;"></div>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══════════════════════════════════════════ -->
+          <!-- ТАБ 2: ТИТУЛЬНЫЙ ЛИСТ (новый)             -->
+          <!-- ═══════════════════════════════════════════ -->
+          <div id="titleTab" style="display: none;">
+            <div class="title-form-wrapper">
+              <h3>📝 Генератор титульного листа</h3>
+
+              <div class="form-grid">
+                <!-- Тип работы -->
+                <div class="form-group">
+                  <label>Тип работы</label>
+                  <select id="tp_work_title">
+                    <option value="ОТЧЕТ ПО ПРАКТИЧЕСКОЙ РАБОТЕ">Отчет по практической работе</option>
+                    <option value="ОТЧЕТ ПО ЛАБОРАТОРНОЙ РАБОТЕ">Отчет по лабораторной работе</option>
+                    <option value="КУРСОВАЯ РАБОТА">Курсовая работа</option>
+                    <option value="ДИПЛОМНАЯ РАБОТА">Дипломная работа</option>
+                    <option value="ОТЧЕТ ПО ПРАКТИКЕ">Отчет по практике</option>
+                    <option value="РЕФЕРАТ">Реферат</option>
+                  </select>
+                </div>
+
+                <!-- Номер -->
+                <div class="form-group">
+                  <label>Номер работы</label>
+                  <input id="tp_work_number" type="text" placeholder="2">
+                </div>
+
+                <!-- Код специальности -->
+                <div class="form-group">
+                  <label>Код специальности</label>
+                  <input id="tp_specialty_code" type="text" value="09.02.07">
+                </div>
+
+                <!-- Наименование специальности -->
+                <div class="form-group">
+                  <label>Наименование специальности</label>
+                  <input id="tp_specialty_name" type="text"
+                         value="Информационные системы и программирование">
+                </div>
+
+                <!-- Дисциплина -->
+                <div class="form-group full">
+                  <label>Наименование дисциплины</label>
+                  <input id="tp_subject" type="text" placeholder="Web-программирование">
+                </div>
+
+                <!-- Группа -->
+                <div class="form-group">
+                  <label>Номер группы</label>
+                  <input id="tp_group" type="text" placeholder="9ПР-3.23П">
+                </div>
+
+                <!-- Зачётка -->
+                <div class="form-group">
+                  <label>Номер зачетной книжки</label>
+                  <input id="tp_student_id" type="text" placeholder="194кр">
+                </div>
+
+                <!-- ФИО студента -->
+                <div class="form-group">
+                  <label>Студент (И.О. Фамилия)</label>
+                  <input id="tp_student_name" type="text" placeholder="П.Ю. Пьянникова">
+                </div>
+
+                <!-- ФИО преподавателя -->
+                <div class="form-group">
+                  <label>Преподаватель (И.О. Фамилия)</label>
+                  <input id="tp_teacher_name" type="text" placeholder="А.Г. Королев">
+                </div>
+
+                <!-- Город -->
+                <div class="form-group">
+                  <label>Город</label>
+                  <input id="tp_city" type="text" value="Красноярск">
+                </div>
+
+                <!-- Год -->
+                <div class="form-group">
+                  <label>Год</label>
+                  <input id="tp_year" type="text">
+                </div>
+              </div>
+
+              <!-- Рамка -->
+              <div class="title-template-section">
+                <h4>🖼️ Рамка (необязательно)</h4>
+                <input type="file" id="tp_template" accept=".docx"
+                       style="margin-top: 6px;">
+                <p id="tp_template_name" style="color: #4CAF50; font-size: 13px; margin-top: 4px;"></p>
+              </div>
+
+              <!-- Кнопка -->
+              <button class="generate-btn" id="generateTitleBtn" onclick="generateTitlePage()">
+                📄 Сгенерировать титульный лист
+              </button>
+
+              <div class="title-error" id="titleError"></div>
+              <div class="title-success" id="titleSuccess"></div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Info Section -->
+      <section class="order" id="inform">
+        <div class="container">
+          <div class="us">
+            <img src="/static/images/Us.svg" alt="О нас" />
+          </div>
+          <h1>
+            Превратите ваш черновик в идеальный <br>ГОСТ-документ без усилий!
+          </h1>
+          <div class="functions-items">
+            <article class="windows">
+              <div class="us-details">
+                <img src="/static/images/Text-1.svg" alt="1" />
+                <p>Сайт принимает ваш .docx</p>
+              </div>
+            </article>
+            <article class="windows">
+              <div class="us-details">
+                <img src="/static/images/Text-2.svg" alt="2" />
+                <p>Автоматически применяет стандарты ГОСТ</p>
+              </div>
+            </article>
+            <article class="windows">
+              <div class="us-details">
+                <img src="/static/images/Text-3.svg" alt="3" />
+                <p>Можете следить за статусом обработки файла в режиме реального времени</p>
+              </div>
+            </article>
+            <article class="windows">
+              <div class="us-details">
+                <img src="/static/images/Text-4.svg" alt="4" />
+                <p>Покажет вам результат и с помощью предпросмотра вы сразу увидите, как преобразился ваш документ</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer" id="footer">
+        <div class="container">
+          <div class="logo">
+            <img src="/static/images/logo.svg" alt="НеГОСТуй"/>
+          </div>
+          <div class="contacts">
+            <h4>Контакты</h4>
+            <p>negostui@gmail.com</p>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <script src="/static/scripts/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,672 @@
+/* ============================================================================
+   БАЗОВЫЕ СТИЛИ
+   ============================================================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #2140F0;
+  font-family: 'Roboto', sans-serif;
+  letter-spacing: -1px;
+  color: #F4F6FF;
+}
+
+/* ============================================================================
+   ЗАГРУЗКА ФАЙЛА
+   ============================================================================ */
+
+input[type="file"] {
+  display: none;
+}
+
+.custom-file-upload {
+  display: inline-block;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.loading-action {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.custom-file-upload img {
+  display: block;
+  margin: 0 auto;
+}
+
+/* ============================================================================
+   КОНТЕЙНЕР И HEADER
+   ============================================================================ */
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.header {
+  padding: 36px 0;
+}
+
+.header .container {
+  display: flex;
+  align-items: center;
+}
+
+.logo img {
+  max-width: 140px;
+  vertical-align: bottom;
+}
+
+.menu {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.menu ul {
+  list-style: none;
+  display: flex;
+  gap: 65px;
+}
+
+.menu ul a {
+  font-size: 14px;
+  color: #C2CDFF;
+  font-weight: bold;
+  text-decoration: none;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.menu ul a:hover {
+  color: #5d73f4;
+}
+
+/* ============================================================================
+   MAIN CONTENT
+   ============================================================================ */
+
+.main-info h1 {
+  font-size: 40px;
+  line-height: 100%;
+  margin-top: 24px;
+  margin-bottom: 40px;
+  text-align: center;
+  color: #ffffff !important;
+}
+
+.main-info p {
+  font-size: 24px;
+  line-height: 120%;
+  color: #d4d4d4;
+  max-width: 480px;
+  margin-bottom: 60px;
+}
+
+.text {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.text div {
+  width: 500px;
+  text-align: center;
+}
+
+.text h4 {
+  font-size: 14px;
+  font-weight: bold;
+  color: #C2CDFF;
+}
+
+/* ============================================================================
+   БЛОКИ ЗАГРУЗКИ И РЕЗУЛЬТАТОВ
+   ============================================================================ */
+
+.nearby {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+}
+
+.loading-items {
+  width: 500px;
+  height: 480px;
+  padding: 20px;
+  color: #5d73f4;
+  font-size: 16px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  background-color: #F4F6FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading {
+  width: 100%;
+}
+
+.loading-details {
+  padding: 30px;
+  text-align: center;
+}
+
+.loading-details p {
+  margin-top: 16px;
+  font-size: 16px !important;
+  color: #5d73f4 !important;
+  font-weight: normal !important;
+}
+
+/* ============================================================================
+   СООБЩЕНИЯ И ИНДИКАТОРЫ
+   ============================================================================ */
+
+.file-name {
+  margin-top: 12px !important;
+  font-size: 14px !important;
+  color: #2140F0 !important;
+  font-weight: bold !important;
+  word-wrap: break-word;
+  display: none;
+}
+
+.error-message {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #ff4444;
+  font-weight: bold;
+  min-height: 20px;
+  display: none;
+}
+
+/* Индикатор загрузки */
+.loading-indicator {
+  text-align: center;
+  padding: 30px 20px;
+  display: none;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #2140F0;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-indicator p {
+  color: #2140F0 !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+}
+
+/* ============================================================================
+   РЕЗУЛЬТАТЫ АНАЛИЗА
+   ============================================================================ */
+
+#analysisResults {
+  width: 100%;
+  max-height: 440px;
+  overflow-y: auto;
+  text-align: left;
+  padding-right: 10px;
+  display: none;
+}
+
+/* Основной блок результатов - БЕЗ ГРАДИЕНТА */
+.result-summary {
+   /* Обычный синий фон */
+  color:  #2140F0;
+  padding: 24px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.result-summary h3 {
+  font-size: 20px;
+  margin-bottom: 16px;
+  color: #2140F0;
+
+  font-weight: bold;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.summary-item span:first-child {
+  opacity: 0.95;
+  font-weight: 400;
+}
+
+.summary-item span:last-child {
+  font-weight: bold;
+}
+
+/* Бейджи оценки */
+.grade-badge {
+  display: inline-block;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-weight: bold;
+  font-size: 15px;
+  margin-top: 16px;
+  text-transform: uppercase;
+}
+
+.grade-perfect {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.grade-warning {
+  background-color: #FF9800;
+  color: white;
+}
+
+.grade-error {
+  background-color: #f44336;
+  color: white;
+}
+
+/* ============================================================================
+   СПИСОК ЭЛЕМЕНТОВ ДОКУМЕНТА
+   ============================================================================ */
+
+.elements-list {
+  margin-top: 20px;
+}
+
+.elements-list h4 {
+  color: #2140F0;
+  margin-bottom: 12px;
+  font-weight: bold;
+}
+
+/* Карточки элементов - БЕЗ HOVER ЭФФЕКТА */
+.element-card {
+  background: white;
+  border-left: 5px solid #ddd;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.element-card.status-correct {
+  border-left-color: #4CAF50;
+  background: #f1f8f4;
+}
+
+.element-card.status-warning {
+  border-left-color: #FF9800;
+  background: #fff8f0;
+}
+
+.element-card.status-error {
+  border-left-color: #f44336;
+  background: #fff1f0;
+}
+
+.element-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-weight: bold;
+  color: #333;
+}
+
+.element-type {
+  background: #e0e0e0;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.element-status {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+}
+
+.element-text {
+  color: #555 !important;
+  margin: 12px 0;
+  font-style: italic;
+  line-height: 1.5;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+}
+
+/* Ошибки и предупреждения */
+.element-errors,
+.element-warnings {
+  margin-top: 12px;
+}
+
+.element-errors strong,
+.element-warnings strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #333;
+}
+
+.element-errors p,
+.element-warnings p {
+  margin: 6px 0;
+  padding-left: 20px;
+  position: relative;
+  font-size: 13px !important;
+  line-height: 1.4;
+}
+
+.element-errors p {
+  color: #d32f2f !important;
+  font-weight: 500 !important;
+}
+
+/* Маркер ошибки - простой крестик БЕЗ СМАЙЛИКА */
+.element-errors p:before {
+  content: "×";
+  position: absolute;
+  left: 0;
+  color: #d32f2f;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.element-warnings p {
+  color: #f57c00 !important;
+  font-weight: 500 !important;
+}
+
+/* Маркер предупреждения - восклицательный знак БЕЗ СМАЙЛИКА */
+.element-warnings p:before {
+  content: "!";
+  position: absolute;
+  left: 0;
+  color: #f57c00;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* ============================================================================
+   SCROLLBAR ДЛЯ РЕЗУЛЬТАТОВ
+   ============================================================================ */
+
+#analysisResults::-webkit-scrollbar {
+  width: 10px;
+}
+
+#analysisResults::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+#analysisResults::-webkit-scrollbar-thumb {
+  background: #2140F0;
+  border-radius: 10px;
+}
+
+#analysisResults::-webkit-scrollbar-thumb:hover {
+  background: #1a33c0;
+}
+
+/* ============================================================================
+   СЕКЦИЯ "О САЙТЕ"
+   ============================================================================ */
+
+.order {
+  background-color: #F4F6FF;
+  margin-top: 106px;
+  padding: 96px 0;
+}
+
+.us {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.us img {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+}
+
+.order .container h1 {
+  color: #3B3B3B;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.order .container p {
+  color: #3B3B3B;
+  font-weight: bold;
+  font-size: 24px;
+}
+
+.functions-items {
+  display: grid;
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.windows {
+  background-color: #F4F6FF;
+  border: 2px solid #C2CDFF;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.us-details {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.us-details img {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.us-details p {
+  margin: 0;
+  font-size: 20px !important;
+  line-height: 1.4;
+}
+
+/* ============================================================================
+   FOOTER
+   ============================================================================ */
+
+.footer {
+  padding: 78px 0;
+}
+
+.footer .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.contacts h4 {
+  font-size: 20px;
+  letter-spacing: normal;
+  font-weight: bold;
+  margin-bottom: 12px;
+  color: #F4F6FF;
+}
+
+.contacts p {
+  font-size: 20px !important;
+  color: #C2CDFF !important;
+  font-weight: normal !important;
+}
+
+/* ============================================================================
+   АДАПТИВНОСТЬ (опционально)
+   ============================================================================ */
+
+@media (max-width: 1040px) {
+  .container {
+    max-width: 90%;
+  }
+
+  .nearby {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .loading-items {
+    width: 100%;
+    max-width: 500px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-info h1 {
+    font-size: 28px;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .menu ul {
+    gap: 30px;
+  }
+
+  .menu ul a {
+    font-size: 12px;
+  }
+}
+
+/* ============================================================================
+   КНОПКА СКАЧИВАНИЯ
+   ============================================================================ */
+
+.download-btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px 24px;
+    background-color: #2140F0;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: 'Roboto', sans-serif;
+}
+
+.download-btn:hover {
+    background-color: #1a33c0;
+}
+
+/* ============================================================================
+   ЗАГРУЗКА РАМКИ И КНОПКИ
+   ============================================================================ */
+
+.upload-section {
+    margin-bottom: 12px;
+}
+
+.upload-section h4 {
+    font-size: 14px !important;
+    margin-bottom: 8px;
+}
+
+.template-btn {
+    display: inline-block;
+    padding: 8px 20px;
+    background-color: #C2CDFF;
+    color: #2140F0;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.template-btn:hover {
+    background-color: #a8b8ff;
+}
+
+.template-upload {
+    padding: 0 !important;
+}
+
+.submit-btn {
+    display: none;
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px 24px;
+    background-color: #2140F0;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: 'Roboto', sans-serif;
+}
+
+.submit-btn:hover {
+    background-color: #1a33c0;
+}
+
+.download-btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px 24px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: 'Roboto', sans-serif;
+}
+
+.download-btn:hover {
+    background-color: #388E3C;
+}
