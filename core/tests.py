@@ -30,3 +30,16 @@ class GostCoreTest(TestCase):
         status, errors, warnings = check_gost_compliance(p, "text")
         self.assertEqual(status, "error")
         self.assertTrue(any("Шрифт" in e for e in errors))
+
+    def test_figure_caption_12pt_not_body_rules(self):
+        """Подпись к рисунку: 12 pt и центр — не ошибки основного текста"""
+        p = {
+            "font_name": "Times New Roman",
+            "font_size_pt": 12,
+            "line_spacing": 1.25,
+            "centered": True,
+        }
+        status, errors, warnings = check_gost_compliance(p, "figure_caption")
+        self.assertEqual(status, "correct")
+        self.assertEqual(errors, [])
+        self.assertEqual(warnings, [])

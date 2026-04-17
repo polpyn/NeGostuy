@@ -35,3 +35,6 @@ desktop.ini
 # Временные файлы
 *.tmp
 *.bak
+
+# Отладка рамки (NEGOSTUY_FRAME_DEBUG)
+debug_frame/

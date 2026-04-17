@@ -10,6 +10,8 @@ from docx import Document
 from docx.shared import Pt, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
+from docx.table import Table
+from docx.text.paragraph import Paragraph
 
 
 def extract_images_from_docx(docx_path, output_folder):
@@ -48,9 +50,89 @@ def resolve_image_path(doc, rId, extracted_images):
         return None
 
 
+def paragraph_to_dict(para, doc, extracted_images, index):
+    """
+    Словарь свойств параграфа или None, если пустой (без текста и без картинки).
+    """
+    text = para.text.strip()
+
+    image_rIds = get_paragraph_images(para)
+    has_image = len(image_rIds) > 0
+    image_paths = []
+    for rId in image_rIds:
+        path = resolve_image_path(doc, rId, extracted_images)
+        if path:
+            image_paths.append(path)
+
+    if not text and not has_image:
+        return None
+
+    numId = None
+    level = 0
+    pPr = para._p.pPr
+    if pPr is not None and pPr.numPr is not None:
+        if pPr.numPr.numId is not None:
+            numId = int(pPr.numPr.numId.val)
+        if pPr.numPr.ilvl is not None:
+            level = int(pPr.numPr.ilvl.val)
+
+    bold = False
+    if para.runs:
+        non_empty = [r for r in para.runs if r.text.strip()]
+        if non_empty:
+            bold = all(r.bold for r in non_empty)
+
+    centered = False
+    try:
+        centered = para.paragraph_format.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    except Exception:
+        pass
+
+    font_name = None
+    font_size_pt = None
+    if para.runs and len(para.runs) > 0:
+        run = para.runs[0]
+        if run.font:
+            font_name = run.font.name
+            if run.font.size:
+                font_size_pt = run.font.size.pt
+
+    line_spacing = None
+    try:
+        ls = para.paragraph_format.line_spacing
+        if ls:
+            line_spacing = float(ls)
+    except Exception:
+        pass
+
+    first_indent_cm = None
+    try:
+        fi = para.paragraph_format.first_line_indent
+        if fi:
+            first_indent_cm = round(fi / 360000, 2)
+    except Exception:
+        pass
+
+    return {
+        "index": index,
+        "text": text,
+        "numId": numId,
+        "level": level,
+        "bold": bold,
+        "centered": centered,
+        "has_numbering": numId is not None,
+        "has_image": has_image,
+        "image_paths": image_paths,
+        "font_name": font_name,
+        "font_size_pt": font_size_pt,
+        "line_spacing": line_spacing,
+        "first_indent_cm": first_indent_cm,
+    }
+
+
 def collect_paragraphs(doc, extracted_images):
     """
-    Собирает все параграфы документа с их свойствами.
+    Собирает параграфы тела документа (как doc.paragraphs — без ячеек таблиц).
 
     Возвращает список словарей:
     - index, text, numId, level, bold, centered
@@ -58,91 +140,49 @@ def collect_paragraphs(doc, extracted_images):
     - font_name, font_size_pt, line_spacing, first_indent_cm
     """
     paragraphs = []
-
     for i, para in enumerate(doc.paragraphs):
-        text = para.text.strip()
-
-        # Изображения
-        image_rIds = get_paragraph_images(para)
-        has_image = len(image_rIds) > 0
-        image_paths = []
-        for rId in image_rIds:
-            path = resolve_image_path(doc, rId, extracted_images)
-            if path:
-                image_paths.append(path)
-
-        if not text and not has_image:
-            continue
-
-        # Нумерация Word (numPr)
-        numId = None
-        level = 0
-        pPr = para._p.pPr
-        if pPr is not None and pPr.numPr is not None:
-            if pPr.numPr.numId is not None:
-                numId = int(pPr.numPr.numId.val)
-            if pPr.numPr.ilvl is not None:
-                level = int(pPr.numPr.ilvl.val)
-
-        # Жирность
-        bold = False
-        if para.runs:
-            non_empty = [r for r in para.runs if r.text.strip()]
-            if non_empty:
-                bold = all(r.bold for r in non_empty)
-
-        # Выравнивание
-        centered = False
-        try:
-            centered = para.paragraph_format.alignment == WD_ALIGN_PARAGRAPH.CENTER
-        except:
-            pass
-
-        # Шрифт
-        font_name = None
-        font_size_pt = None
-        if para.runs and len(para.runs) > 0:
-            run = para.runs[0]
-            if run.font:
-                font_name = run.font.name
-                if run.font.size:
-                    font_size_pt = run.font.size.pt
-
-        # Межстрочный интервал
-        line_spacing = None
-        try:
-            ls = para.paragraph_format.line_spacing
-            if ls:
-                line_spacing = float(ls)
-        except:
-            pass
-
-        # Отступ первой строки
-        first_indent_cm = None
-        try:
-            fi = para.paragraph_format.first_line_indent
-            if fi:
-                first_indent_cm = round(fi / 360000, 2)
-        except:
-            pass
-
-        paragraphs.append({
-            "index": i,
-            "text": text,
-            "numId": numId,
-            "level": level,
-            "bold": bold,
-            "centered": centered,
-            "has_numbering": numId is not None,
-            "has_image": has_image,
-            "image_paths": image_paths,
-            "font_name": font_name,
-            "font_size_pt": font_size_pt,
-            "line_spacing": line_spacing,
-            "first_indent_cm": first_indent_cm,
-        })
-
+        d = paragraph_to_dict(para, doc, extracted_images, i)
+        if d:
+            paragraphs.append(d)
     return paragraphs
+
+
+def _table_to_rows(table: Table) -> list[list[str]]:
+    """Текст ячеек по строкам (упрощённо, без учёта сложного merge)."""
+    rows_out: list[list[str]] = []
+    for row in table.rows:
+        cells = [
+            cell.text.replace("\r", " ").replace("\n", " ").strip()
+            for cell in row.cells
+        ]
+        rows_out.append(cells)
+    return rows_out
+
+
+def collect_ordered_blocks(doc, extracted_images):
+    """
+    Порядок блоков тела документа: параграфы и таблицы как в оригинале.
+
+    Возвращает:
+      blocks — список ("p", idx) | ("t", rows), где idx — индекс в par_list;
+      par_list — список словарей параграфов (только непустые), для нумерации и classify.
+    """
+    blocks: list = []
+    par_list: list = []
+    body_para_index = 0
+    for item in doc.iter_inner_content():
+        if isinstance(item, Paragraph):
+            d = paragraph_to_dict(item, doc, extracted_images, body_para_index)
+            body_para_index += 1
+            if d is None:
+                continue
+            par_list.append(d)
+            blocks.append(("p", len(par_list) - 1))
+        elif isinstance(item, Table):
+            rows = _table_to_rows(item)
+            if rows:
+                blocks.append(("t", rows))
+    return blocks, par_list
 
 
 def assign_numbers_globally(paragraphs):

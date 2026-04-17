@@ -4,14 +4,21 @@ Django settings для проекта НеГостуй
 
 from pathlib import Path
 import os
+import mimetypes
+
+# Эти строки помогут туннелю передавать файлы без обрывов
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_TRUSTED_ORIGINS = ['https://*.pinggy.link', 'https://*.lhr.life']
+mimetypes.add_type("text/css", ".css", True)
+mimetypes.add_type("text/javascript", ".js", True)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'negostuy-secret-key-change-in-production'
+SECRET_KEY = os.getenv('SECRET_KEY', 'negostuy-secret-key-change-in-production')
 
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes', 'on')
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '*').split(',') if h.strip()]
 
 # ============================================================
 # ПРИЛОЖЕНИЯ
@@ -64,25 +71,38 @@ TEMPLATES = [
 ]
 
 # ============================================================
-# БАЗА ДАННЫХ — PostgreSQL
+# БАЗА ДАННЫХ
 # ============================================================
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'negostuy_db',
-        'USER': 'postgres',
-        'PASSWORD': 'dasha',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
+# Локально — SQLite по умолчанию. Для VPS/compose используйте PostgreSQL через env.
+DB_ENGINE = os.getenv('DB_ENGINE', 'django.db.backends.sqlite3')
+if DB_ENGINE == 'django.db.backends.sqlite3':
+    DATABASES = {
+        'default': {
+            'ENGINE': DB_ENGINE,
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': DB_ENGINE,
+            'NAME': os.getenv('DB_NAME', 'negostuy'),
+            'USER': os.getenv('DB_USER', 'negostuy'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'negostuy'),
+            'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+        }
+    }
 
-# Для быстрого старта без PostgreSQL — SQLite:
+# PostgreSQL (когда понадобится):
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'negostuy_db',
+#         'USER': 'postgres',
+#         'PASSWORD': 'dasha',
+#         'HOST': '127.0.0.1',
+#         'PORT': '5432',
 #     }
 # }
 
@@ -107,6 +127,14 @@ REST_FRAMEWORK = {
 }
 
 # ============================================================
+# CELERY / REDIS
+# ============================================================
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', CELERY_BROKER_URL)
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = int(os.getenv('CELERY_TASK_TIME_LIMIT', '900'))
+
+# ============================================================
 # ФАЙЛЫ
 # ============================================================
 
@@ -124,3 +152,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Europe/Moscow'
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.pinggy.link',
+    'https://*.lhr.life'
+]

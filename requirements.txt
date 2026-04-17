@@ -3,3 +3,8 @@ djangorestframework
 django-cors-headers
 python-docx
 Pillow
+psycopg[binary]
+celery
+redis
+gunicorn
+docxcompose

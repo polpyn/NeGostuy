@@ -100,6 +100,12 @@ class Document(models.Model):
         default=0,
         verbose_name="Прогресс (%)"
     )
+    task_id = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        verbose_name="ID фоновой задачи"
+    )
 
     uploaded_at = models.DateTimeField(
         auto_now_add=True,

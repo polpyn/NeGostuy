@@ -199,15 +199,23 @@
                       <p id="fileName" class="file-name"></p>
                     </div>
 
+                    <div class="upload-section" style="margin-top: 16px;">
+                      <label for="frame_zachet" style="display: block; font-weight: 600; margin-bottom: 6px; color: #333;">
+                        Номер зачётной книжки (в штамп рамки)
+                      </label>
+                      <input id="frame_zachet" type="text" placeholder="Например: 194кр"
+                             style="width: 100%; max-width: 320px; padding: 8px 10px; border: 1px solid #C2CDFF; border-radius: 6px; font-size: 14px;"/>
+                    </div>
+
                     <div class="upload-section" style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #C2CDFF;">
-                      <h4 style="color: #2140F0; margin-bottom: 8px;">🖼️ Рамка (необязательно)</h4>
+                      <h4 style="color: #2140F0; margin-bottom: 8px;">📄 Готовый титульный лист (для склейки, необязательно)</h4>
                       <div class="loading-action">
                         <label class="custom-file-upload template-upload">
-                          <span class="template-btn">Выбрать рамку .docx</span>
-                          <input type="file" id="templateInput" accept=".docx"/>
+                          <span class="template-btn">Выбрать титульник .docx</span>
+                          <input type="file" id="prependTitleInput" accept=".docx"/>
                         </label>
                       </div>
-                      <p id="templateName" class="file-name"></p>
+                      <p id="prependTitleName" class="file-name"></p>
                     </div>
 
                     <button id="submitBtn" class="submit-btn" style="display: none;">
@@ -390,6 +398,6 @@
       </footer>
     </main>
 
-    <script src="/static/scripts/app.js"></script>
+    <script src="/static/scripts/app.js?v=9"></script>
   </body>
 </html>

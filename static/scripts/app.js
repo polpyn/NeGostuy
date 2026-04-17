@@ -5,10 +5,20 @@
 const CONFIG = {
     API_URL: '/api/upload/',
     HEALTH_URL: '/api/health/',
+    STATUS_URL: '/api/status/',
+    REPORT_URL: '/api/report/',
     DOWNLOAD_URL: '/api/download/',
+    PREPEND_TITLE_URL: '/api/prepend-title/',
     MAX_FILE_SIZE: 16 * 1024 * 1024,
     ALLOWED_EXTENSION: '.docx'
 };
+
+function escapeHtml(text) {
+    if (text == null || text === '') return '';
+    const d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML;
+}
 
 // ============================================================================
 // DOM ЭЛЕМЕНТЫ
@@ -16,10 +26,10 @@ const CONFIG = {
 
 const elements = {
     fileInput: null,
-    templateInput: null,
+    prependTitleInput: null,
     submitBtn: null,
     fileName: null,
-    templateName: null,
+    prependTitleName: null,
     errorMessage: null,
     resultText: null,
     loadingIndicator: null,
@@ -28,7 +38,6 @@ const elements = {
 
 // Выбранные файлы
 let selectedFile = null;
-let selectedTemplate = null;
 
 // ============================================================================
 // ИНИЦИАЛИЗАЦИЯ
@@ -39,10 +48,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Находим элементы
     elements.fileInput = document.getElementById('fileInput');
-    elements.templateInput = document.getElementById('templateInput');
+    elements.prependTitleInput = document.getElementById('prependTitleInput');
     elements.submitBtn = document.getElementById('submitBtn');
     elements.fileName = document.getElementById('fileName');
-    elements.templateName = document.getElementById('templateName');
+    elements.prependTitleName = document.getElementById('prependTitleName');
     elements.errorMessage = document.getElementById('errorMessage');
     elements.resultText = document.getElementById('resultText');
     elements.loadingIndicator = document.getElementById('loadingIndicator');
@@ -55,8 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elements.fileInput) {
         elements.fileInput.addEventListener('change', handleFileSelect);
     }
-    if (elements.templateInput) {
-        elements.templateInput.addEventListener('change', handleTemplateSelect);
+    if (elements.prependTitleInput) {
+        elements.prependTitleInput.addEventListener('change', handlePrependTitleSelect);
     }
     if (elements.submitBtn) {
         elements.submitBtn.addEventListener('click', handleSubmit);
@@ -110,29 +119,6 @@ function handleFileSelect(event) {
 }
 
 // ============================================================================
-// ВЫБОР РАМКИ
-// ============================================================================
-
-function handleTemplateSelect(event) {
-    const file = event.target.files[0];
-
-    if (!file) return;
-
-    console.log('🖼️ Рамка:', file.name);
-
-    if (!file.name.endsWith('.docx')) {
-        showError('Рамка должна быть в формате .docx');
-        elements.templateInput.value = '';
-        selectedTemplate = null;
-        return;
-    }
-
-    selectedTemplate = file;
-    elements.templateName.textContent = `✓ Рамка: ${file.name}`;
-    elements.templateName.style.display = 'block';
-}
-
-// ============================================================================
 // КНОПКА ОТПРАВКИ
 // ============================================================================
 
@@ -149,7 +135,26 @@ function handleSubmit() {
         showError('Сначала выберите документ');
         return;
     }
-    uploadFile(selectedFile, selectedTemplate);
+    uploadFile(selectedFile);
+}
+
+function handlePrependTitleSelect(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!elements.prependTitleName) return;
+    if (!file) {
+        elements.prependTitleName.textContent = '';
+        elements.prependTitleName.style.display = 'none';
+        return;
+    }
+    if (!file.name.toLowerCase().endsWith('.docx')) {
+        showError('Титульный лист должен быть в формате .docx');
+        event.target.value = '';
+        elements.prependTitleName.textContent = '';
+        elements.prependTitleName.style.display = 'none';
+        return;
+    }
+    elements.prependTitleName.textContent = `✓ Титульник: ${file.name}`;
+    elements.prependTitleName.style.display = 'block';
 }
 
 // ============================================================================
@@ -174,19 +179,36 @@ function validateFile(file) {
 // ЗАГРУЗКА НА СЕРВЕР
 // ============================================================================
 
-async function uploadFile(file, template) {
+/** Номер зачётной книжки для штампа: вкладка «Проверка»; иначе № с вкладки «Титульный лист». */
+function collectFrameZachetValue() {
+    const el = document.getElementById('frame_zachet');
+    if (el && el.value != null && String(el.value).trim()) {
+        return String(el.value).trim();
+    }
+    const tp = document.getElementById('tp_student_id');
+    if (tp && tp.value != null && String(tp.value).trim()) {
+        return String(tp.value).trim();
+    }
+    return '';
+}
+
+async function uploadFile(file) {
     showLoading();
 
+    const zachet = collectFrameZachetValue();
+    console.log(
+        'Номер зачётки -> сервер, длина:',
+        zachet.length,
+        zachet ? `«${zachet}»` : '(пусто) — поле под документом или № зачётки на вкладке «Титульный лист»'
+    );
+
     const formData = new FormData();
+    formData.append('student_id', zachet);
+    formData.append('zachet_number', zachet);
+    formData.append('work_type', 'coursework');
     formData.append('file', file);
 
-    // Добавляем рамку если выбрана
-    if (template) {
-        formData.append('template', template);
-        console.log('📤 Отправка с рамкой:', template.name);
-    } else {
-        console.log('📤 Отправка без рамки');
-    }
+    console.log('Рамка: используется ramka.docx по умолчанию на сервере');
 
     try {
         const response = await fetch(CONFIG.API_URL, {
@@ -209,12 +231,22 @@ async function uploadFile(file, template) {
 
         const data = await response.json();
         console.log('✅ Данные:', data);
+        if (data.summary) {
+            const zr = data.summary.zachet_received;
+            console.log(
+                'Сервер zachet_received:',
+                zr === '' || zr == null ? '(пусто)' : zr
+            );
+        }
 
         if (!data.success) {
             throw new Error(data.error || 'Ошибка обработки');
         }
-
-        displayResults(data);
+        if (data.status === 'queued' && data.document_id) {
+            await pollProcessing(data.document_id);
+        } else {
+            displayResults(data);
+        }
 
     } catch (error) {
         hideLoading();
@@ -226,6 +258,49 @@ async function uploadFile(file, template) {
             showError(error.message);
         }
     }
+}
+
+async function pollProcessing(documentId) {
+    const maxAttempts = 240; // около 8 минут при интервале 2с
+    for (let i = 0; i < maxAttempts; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        const res = await fetch(`${CONFIG.STATUS_URL}${documentId}/`);
+        if (!res.ok) continue;
+        const st = await res.json();
+        if (st.status === 'completed') {
+            const reportRes = await fetch(`${CONFIG.REPORT_URL}${documentId}/`);
+            if (!reportRes.ok) {
+                throw new Error('Не удалось получить отчёт обработки');
+            }
+            const reportData = await reportRes.json();
+            const data = {
+                success: true,
+                document_id: documentId,
+                document_name: st.filename,
+                status: st.status,
+                summary: {
+                    total_elements: reportData.summary?.total_elements || 0,
+                    headings: 0,
+                    lists: 0,
+                    texts: 0,
+                    images: 0,
+                    errors_count: reportData.summary?.errors_count || 0,
+                    warnings_count: reportData.summary?.warnings_count || 0,
+                    grade: reportData.summary?.grade || '',
+                    processing_time: reportData.summary?.processing_time || 0,
+                    has_template: true,
+                    zachet_received: collectFrameZachetValue(),
+                },
+                elements: [],
+            };
+            displayResults(data);
+            return;
+        }
+        if (st.status === 'error') {
+            throw new Error('Ошибка фоновой обработки документа');
+        }
+    }
+    throw new Error('Документ обрабатывается слишком долго');
 }
 
 // ============================================================================
@@ -273,6 +348,12 @@ function displayResults(data) {
                 <p style="color: #4CAF50; margin-top: 8px; font-size: 13px;">
                     ✅ Рамка применена
                 </p>
+                <p style="margin-top: 6px; font-size: 13px; line-height: 1.4;">
+                    ${summary.zachet_received
+                        ? `<span style="color:#2e7d32;">Номер для штампа (сервер принял): <strong>${escapeHtml(String(summary.zachet_received))}</strong></span>`
+                        : '<span style="color:#c62828;">Сервер не получил номер зачётной книжки — в штампе будет пусто. Укажите его в поле над кнопкой и отправьте снова; в консоли (F12) смотрите строку «Отправка номера зачётки».</span>'
+                    }
+                </p>
             ` : ''}
 
             <div class="grade-badge ${getGradeClass(summary.grade)}">
@@ -308,7 +389,8 @@ function createElementCard(item, index) {
     const typeLabels = {
         'heading': '📌 Заголовок',
         'text': '📝 Текст',
-        'list_item': '📋 Список'
+        'list_item': '📋 Список',
+        'figure_caption': '📷 Подпись к рисунку'
     };
 
     const statusIcons = {
@@ -349,9 +431,45 @@ function createElementCard(item, index) {
 // ============================================================================
 
 function downloadFile(documentId) {
+    const titleInput = document.getElementById('prependTitleInput');
+    const hasTitle = !!(titleInput && titleInput.files && titleInput.files.length > 0);
+    if (hasTitle) {
+        const formData = new FormData();
+        formData.append('title_file', titleInput.files[0]);
+        fetch(`${CONFIG.PREPEND_TITLE_URL}${documentId}/`, {
+            method: 'POST',
+            body: formData
+        })
+            .then(async (response) => {
+                if (!response.ok) {
+                    let msg = `HTTP ${response.status}`;
+                    try {
+                        const e = await response.json();
+                        msg = e.error || msg;
+                    } catch (_) { }
+                    throw new Error(msg);
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'GOST_с_титульником.docx';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+                console.log('✅ Скачан с титульником');
+            })
+            .catch(error => {
+                console.error('❌', error);
+                alert('Ошибка скачивания: ' + error.message);
+            });
+        return;
+    }
+
     const url = CONFIG.DOWNLOAD_URL + documentId + '/';
     console.log('📥 Скачивание:', url);
-
     fetch(url)
         .then(response => {
             if (!response.ok) throw new Error('Ошибка скачивания');

@@ -14,19 +14,84 @@ API views для проекта НеГостуй
 import os
 import time
 import json
+import tempfile
+from copy import deepcopy
 
-from django.http import FileResponse, JsonResponse
+from django.conf import settings
+from django.http import FileResponse, JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 
+from docx import Document as DocxDocument
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.enum.section import WD_SECTION_START
+from docxcompose.composer import Composer
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+try:
+    from celery.result import AsyncResult
+except Exception:
+    AsyncResult = None
 
 from .models import Document, ProcessingResult, GOSTTemplate, ErrorStatistic
 from core.analyzer import analyze_document
+try:
+    from .tasks import process_document_task
+except Exception:
+    process_document_task = None
+
+
+def _value_from_query_mapping(mapping, key: str):
+    """Одно непустое значение по ключу (QueryDict или совместимый объект)."""
+    if hasattr(mapping, "getlist"):
+        for v in mapping.getlist(key):
+            if v is not None and str(v).strip():
+                return str(v).strip()
+    if hasattr(mapping, "get"):
+        v = mapping.get(key)
+        if v is not None and str(v).strip():
+            return str(v).strip()
+    return None
+
+
+def _multipart_plain_value(request, *keys: str) -> str:
+    """
+    Первое непустое текстовое значение из multipart по списку ключей.
+
+    У DRF тело multipart читается парсером в request.data / request.POST (обёртка).
+    Внутренний request._request.POST после этого часто пустой — нельзя опираться на него первым.
+    """
+    seen: set[int] = set()
+    sources: list = []
+
+    drf_data = getattr(request, "data", None)
+    if drf_data is not None:
+        sources.append(drf_data)
+
+    wrapped_post = getattr(request, "POST", None)
+    if wrapped_post is not None:
+        sources.append(wrapped_post)
+
+    if hasattr(request, "_request"):
+        inner = request._request.POST
+        sources.append(inner)
+
+    for mapping in sources:
+        if mapping is None:
+            continue
+        mid = id(mapping)
+        if mid in seen:
+            continue
+        seen.add(mid)
+        for key in keys:
+            got = _value_from_query_mapping(mapping, key)
+            if got:
+                return got
+    return ""
 
 
 # ============================================================
@@ -72,9 +137,10 @@ def upload_document(request):
     if file.size == 0:
         return Response({'error': 'Файл пустой'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Рамка (необязательно)
+    # Рамка: загрузка или ramka.docx в корне проекта
     template_file = request.FILES.get('template', None)
     template_path = None
+    template_is_temp = False
 
     if template_file:
         if not template_file.name.endswith('.docx'):
@@ -87,36 +153,73 @@ def upload_document(request):
             tmp_template.write(chunk)
         tmp_template.close()
         template_path = tmp_template.name
-        print(f"🖼️ Рамка сохранена: {template_path}")
+        template_is_temp = True
+        print(f"Рамка сохранена: {template_path}")
+    else:
+        default_frame = os.path.join(settings.BASE_DIR, 'ramka.docx')
+        if os.path.isfile(default_frame):
+            template_path = default_frame
+            print(f"Рамка по умолчанию: {template_path}")
+
+    zachet_number = _multipart_plain_value(
+        request, "student_id", "zachet_number", "frame_zachet"
+    )
+    if zachet_number:
+        print(f"Номер зачётной книжки (принят): {zachet_number!r}")
+    else:
+        print("Номер зачётной книжки: не передан или пустой (проверьте поля student_id / zachet_number)")
 
     work_type = request.data.get('work_type', 'coursework')
 
-    # Сохраняем документ в БД
+    # Сохраняем документ в БД и ставим в очередь Celery
     doc = Document.objects.create(
         user=request.user if request.user.is_authenticated else None,
         filename=file.name,
         original_file=file,
         file_size=file.size,
         work_type=work_type,
-        status='uploaded'
+        status='queued',
+        progress=5,
     )
 
     try:
+        if process_document_task is not None:
+            try:
+                async_result = process_document_task.delay(
+                    doc.id,
+                    template_path,
+                    template_is_temp,
+                    zachet_number or "",
+                )
+                doc.task_id = async_result.id
+                doc.save(update_fields=['task_id'])
+                return Response({
+                    'success': True,
+                    'document_id': doc.id,
+                    'document_name': doc.filename,
+                    'status': 'queued',
+                    'task_id': async_result.id,
+                    'summary': {
+                        'has_template': bool(template_path),
+                        'zachet_received': zachet_number,
+                    },
+                    'elements': [],
+                })
+            except Exception as celery_exc:
+                # Локальный fallback: Redis/Celery недоступен — обрабатываем синхронно.
+                print(f"Celery недоступен, fallback на синхронную обработку: {celery_exc}")
+
+        # Fallback: если Celery не установлен/не запущен, обрабатываем синхронно
         doc.status = 'parsing'
         doc.progress = 10
-        doc.save()
-
+        doc.save(update_fields=['status', 'progress'])
         start_time = time.time()
-
-        # Вызываем ядро с путём к рамке
         result_data = analyze_document(
             doc.original_file.path,
-            template_path=template_path
+            template_path=template_path,
+            zachet_number=zachet_number or None,
         )
-
         processing_time = time.time() - start_time
-
-        # Сохраняем результат
         proc_result = ProcessingResult.objects.create(
             document=doc,
             report_json=result_data.get('report', {}),
@@ -130,17 +233,13 @@ def upload_document(request):
             grade=result_data.get('grade', ''),
             processing_time=processing_time,
         )
-
-        # Сохраняем исправленный файл
         if result_data.get('output_path') and os.path.exists(result_data['output_path']):
             from django.core.files import File
             with open(result_data['output_path'], 'rb') as f:
                 proc_result.output_file.save(f"GOST_{doc.filename}", File(f))
-
         doc.status = 'completed'
         doc.progress = 100
-        doc.save()
-
+        doc.save(update_fields=['status', 'progress'])
         return Response({
             'success': True,
             'document_id': doc.id,
@@ -158,28 +257,24 @@ def upload_document(request):
                 'elements_with_errors': proc_result.errors_count,
                 'grade': proc_result.grade,
                 'processing_time': round(processing_time, 2),
-                'has_template': template_path is not None,
+                'has_template': bool(template_path),
+                'zachet_received': zachet_number,
             },
             'elements': result_data.get('elements_detail', []),
         })
-
     except Exception as e:
         doc.status = 'error'
-        doc.save()
-        import traceback
-        traceback.print_exc()
+        doc.progress = 100
+        doc.save(update_fields=['status', 'progress'])
+        if template_is_temp and template_path and os.path.exists(template_path):
+            try:
+                os.unlink(template_path)
+            except OSError:
+                pass
         return Response(
             {'success': False, 'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-
-    finally:
-        # Удаляем временный файл рамки
-        if template_path and os.path.exists(template_path):
-            try:
-                os.unlink(template_path)
-            except:
-                pass
 
 # ============================================================
 # СТАТУС ОБРАБОТКИ
@@ -194,12 +289,20 @@ def document_status(request, doc_id):
     """
     try:
         doc = Document.objects.get(id=doc_id)
+        task_state = None
+        if doc.task_id and AsyncResult is not None:
+            try:
+                task_state = AsyncResult(doc.task_id).state
+            except Exception:
+                task_state = None
         return Response({
             'document_id': doc.id,
             'filename': doc.filename,
             'status': doc.status,
             'progress': doc.progress,
             'status_display': doc.get_status_display(),
+            'task_id': doc.task_id,
+            'task_state': task_state,
         })
     except Document.DoesNotExist:
         return Response(
@@ -389,6 +492,143 @@ def logout_user(request):
 # ============================================================
 # ТИТУЛЬНЫЙ ЛИСТ
 # ============================================================
+
+def _merge_title_and_report(title_path: str, report_path: str, output_path: str) -> None:
+    """
+    Склеивает документы: [титульник] + [отчёт].
+    Используем штатный merger (docxcompose), чтобы корректно сохранить секции:
+    - рамка/колонтитулы титульника остаются на первой части;
+    - рамка отчёта применяется к страницам отчёта;
+    - не ломается геометрия первой страницы (год не "уезжает").
+    """
+    # Сборка через Composer, чтобы сохранить relationship'ы (картинки, стили и т.д.).
+    # Перед append гарантируем отдельную секцию после титульника.
+    title_doc = DocxDocument(title_path)
+    report_doc = DocxDocument(report_path)
+    title_doc.add_section(WD_SECTION_START.NEW_PAGE)
+    composer = Composer(title_doc)
+    composer.append(report_doc)
+    composer.save(output_path)
+
+    # Пост-фикс секций/колонтитулов и нумерации.
+    merged_doc = DocxDocument(output_path)
+    if len(merged_doc.sections) < 2:
+        merged_doc.add_section(WD_SECTION_START.NEW_PAGE)
+
+    report_src = report_doc.sections[0]
+
+    def _copy_hdrftr(src_hdrftr, dst_hdrftr):
+        dst_el = dst_hdrftr._element
+        for child in list(dst_el):
+            dst_el.remove(child)
+        for child in list(src_hdrftr._element):
+            dst_el.append(deepcopy(child))
+
+    def _strip_page_fields(hdrftr):
+        # Убираем только PAGE-поля в fldSimple (именно так вставляется {{list}}),
+        # чтобы на титульнике не печаталась "1".
+        el = hdrftr._element
+        for fld in list(el.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fldSimple')):
+            instr = fld.get(qn('w:instr')) or ''
+            if 'PAGE' in instr:
+                parent = fld.getparent()
+                if parent is not None:
+                    parent.remove(fld)
+
+    def _set_section_page_start(sec, start_value: int):
+        sect_pr = sec._sectPr
+        pg_num = sect_pr.find(qn('w:pgNumType'))
+        if pg_num is None:
+            pg_num = OxmlElement('w:pgNumType')
+            sect_pr.append(pg_num)
+        pg_num.set(qn('w:start'), str(start_value))
+
+    # Все секции отчётной части должны иметь рамку отчёта и не наследовать титульник.
+    for sec in merged_doc.sections[1:]:
+        sec.different_first_page_header_footer = report_src.different_first_page_header_footer
+        sec.header.is_linked_to_previous = False
+        sec.footer.is_linked_to_previous = False
+        sec.even_page_header.is_linked_to_previous = False
+        sec.even_page_footer.is_linked_to_previous = False
+        sec.first_page_header.is_linked_to_previous = False
+        sec.first_page_footer.is_linked_to_previous = False
+        _copy_hdrftr(report_src.header, sec.header)
+        _copy_hdrftr(report_src.footer, sec.footer)
+        _copy_hdrftr(report_src.even_page_header, sec.even_page_header)
+        _copy_hdrftr(report_src.even_page_footer, sec.even_page_footer)
+        _copy_hdrftr(report_src.first_page_header, sec.first_page_header)
+        _copy_hdrftr(report_src.first_page_footer, sec.first_page_footer)
+
+    # Нумерация должна стартовать с 2 во всём документе.
+    # На титульнике номер удалён, поэтому визуально это влияет только на отчёт.
+    for sec in merged_doc.sections:
+        _set_section_page_start(sec, 2)
+
+    # На титульнике убираем номер страницы, чтобы последовательность
+    # в отчётной части начиналась с "2" без лишней первой "1".
+    title_first = merged_doc.sections[0]
+    _strip_page_fields(title_first.header)
+    _strip_page_fields(title_first.footer)
+    _strip_page_fields(title_first.first_page_header)
+    _strip_page_fields(title_first.first_page_footer)
+    _strip_page_fields(title_first.even_page_header)
+    _strip_page_fields(title_first.even_page_footer)
+    merged_doc.save(output_path)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def prepend_title_to_result(request, doc_id):
+    """
+    POST /api/prepend-title/<doc_id>/
+    Берёт готовый титульник из файла title_file и возвращает объединённый docx:
+    [титульник] + [исправленный отчёт].
+    """
+    template_path = None
+    output_title = None
+    output_merged = None
+    try:
+        doc = Document.objects.get(id=doc_id)
+        if doc.status != 'completed':
+            return Response({'error': 'Документ ещё не обработан'}, status=400)
+        if not hasattr(doc, 'result') or not doc.result.output_file:
+            return Response({'error': 'Исправленный файл не найден'}, status=404)
+
+        title_file = request.FILES.get('title_file')
+        if not title_file:
+            return Response({'error': 'Прикрепите готовый титульный лист (.docx)'}, status=400)
+        if not title_file.name.endswith('.docx'):
+            return Response({'error': 'Титульный лист должен быть .docx'}, status=400)
+        fd_title, output_title = tempfile.mkstemp(suffix='.docx', prefix='title_ready_')
+        os.close(fd_title)
+        with open(output_title, 'wb') as dst:
+            for chunk in title_file.chunks():
+                dst.write(chunk)
+
+        fd_merge, output_merged = tempfile.mkstemp(suffix='.docx', prefix='with_title_')
+        os.close(fd_merge)
+        report_path = doc.result.output_file.path
+        _merge_title_and_report(output_title, report_path, output_merged)
+
+        with open(output_merged, 'rb') as f:
+            content = f.read()
+        response = HttpResponse(
+            content,
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        )
+        response['Content-Disposition'] = f'attachment; filename="GOST_with_title_{doc.filename}"'
+        return response
+    except Document.DoesNotExist:
+        return Response({'error': 'Документ не найден'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+    finally:
+        for p in (template_path, output_title, output_merged):
+            if p and os.path.exists(p):
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
 
 @csrf_exempt
 def generate_title_page(request):

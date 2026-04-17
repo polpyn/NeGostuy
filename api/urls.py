@@ -10,6 +10,7 @@ urlpatterns = [
     path('status/<int:doc_id>/', views.document_status, name='status'),
     path('report/<int:doc_id>/', views.document_report, name='report'),
     path('download/<int:doc_id>/', views.download_result, name='download'),
+    path('prepend-title/<int:doc_id>/', views.prepend_title_to_result, name='prepend_title'),
 
     # Титульный лист                          ← НОВОЕ
     path('title-page/', views.generate_title_page, name='title_page'),

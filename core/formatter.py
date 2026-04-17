@@ -23,8 +23,11 @@ GOST = {
     "font": "Times New Roman",
     "font_size": Pt(14),
     "font_size_caption": Pt(12),
+    "font_size_table": Pt(12),
     "line_spacing": 1.5,
     "indent": Cm(1.25),
+    "image_max_width_cm": 16.0,
+    "image_max_height_cm": 7.0,
 }
 
 
@@ -35,8 +38,41 @@ def set_font(run, bold=False, size=None):
     run.font.bold = bold
     try:
         run._element.rPr.rFonts.set(qn('w:eastAsia'), GOST["font"])
-    except:
+    except Exception:
         pass
+
+
+def _gost_image_display_width(image_path: str):
+    """
+    Ширина вставки рисунка с сохранением пропорций, не больше
+    GOST image_max_width_cm × image_max_height_cm (без увеличения мелких).
+    """
+    max_w = float(GOST["image_max_width_cm"])
+    max_h = float(GOST["image_max_height_cm"])
+    try:
+        from PIL import Image
+    except ImportError:
+        return Cm(min(max_w, 16.0))
+
+    try:
+        with Image.open(image_path) as im:
+            px_w, px_h = im.size
+            dpi_raw = im.info.get("dpi")
+            if dpi_raw and isinstance(dpi_raw, (tuple, list)) and dpi_raw[0]:
+                dpi_x = float(dpi_raw[0])
+                dpi_y = float(
+                    dpi_raw[1] if len(dpi_raw) > 1 and dpi_raw[1] else dpi_raw[0]
+                )
+            else:
+                dpi_x = dpi_y = 96.0
+        w_cm = (px_w / dpi_x) * 2.54
+        h_cm = (px_h / dpi_y) * 2.54
+        if w_cm <= 0 or h_cm <= 0:
+            return Cm(min(max_w, 16.0))
+        scale = min(max_w / w_cm, max_h / h_cm, 1.0)
+        return Cm(w_cm * scale)
+    except Exception:
+        return Cm(min(max_w, 16.0))
 
 
 # ================================================================
@@ -226,7 +262,7 @@ def _set_margins(doc):
 # ГЛАВНАЯ ФУНКЦИЯ
 # ================================================================
 
-def create_gost_document(elements, output_path, template_path=None):
+def create_gost_document(elements, output_path, template_path=None, zachet_number=None):
     """
     Создаёт новый документ по ГОСТ из классифицированных элементов.
 
@@ -246,8 +282,7 @@ def create_gost_document(elements, output_path, template_path=None):
         try:
             doc = prepare_template(template_path)
             use_template = True
-            # НЕ меняем поля — шаблон имеет свои, подогнанные под рамку
-            _set_margins(doc)
+            # Поля страницы оставляем как в шаблоне рамки (иначе съезжает штамп)
             print(f"  ✅ Рамка применена!")
         except Exception as e:
             print(f"  ❌ Ошибка рамки: {e}")
@@ -272,6 +307,32 @@ def create_gost_document(elements, output_path, template_path=None):
         text = elem.get("text", "")
         etype = elem["type"]
 
+        if etype == "table":
+            rows_data = elem.get("rows") or []
+            if not rows_data:
+                continue
+            ncol = max(len(r) for r in rows_data)
+            nrows = len(rows_data)
+            tbl = doc.add_table(rows=nrows, cols=ncol)
+            try:
+                tbl.style = "Table Grid"
+            except (KeyError, ValueError):
+                pass
+            for ri, row_cells in enumerate(rows_data):
+                for ci in range(ncol):
+                    txt = row_cells[ci] if ci < len(row_cells) else ""
+                    cell = tbl.cell(ri, ci)
+                    cell.text = txt
+                    for p in cell.paragraphs:
+                        p.paragraph_format.space_before = Pt(0)
+                        p.paragraph_format.space_after = Pt(0)
+                        p.paragraph_format.line_spacing = 1.15
+                        p.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                        for r in p.runs:
+                            set_font(r, bold=False, size=GOST["font_size_table"])
+            elements_written += 1
+            continue
+
         if not text and etype != "image":
             continue
 
@@ -287,7 +348,8 @@ def create_gost_document(elements, output_path, template_path=None):
                     para.paragraph_format.space_after = Pt(6)
                     run = para.add_run()
                     try:
-                        run.add_picture(img_path, width=Cm(16))
+                        w = _gost_image_display_width(img_path)
+                        run.add_picture(img_path, width=w)
                         elements_written += 1
                     except Exception as e:
                         print(f"  ⚠️ Ошибка изображения: {e}")
@@ -302,10 +364,11 @@ def create_gost_document(elements, output_path, template_path=None):
         if etype == "figure_caption":
             clean = re.sub(r'^рисунок\s+\d+\s*[–\-—.:]\s*', '', text, flags=re.IGNORECASE)
             fig_num = elem.get("figure_num", 1)
-            run = para.add_run(f"Рисунок {fig_num} – {clean}")
+            run = para.add_run(f"Рисунок {fig_num} - {clean}")
             set_font(run, bold=False, size=GOST["font_size_caption"])
             para.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
             para.paragraph_format.first_line_indent = Cm(0)
+            para.paragraph_format.line_spacing = 1.0
             para.paragraph_format.space_before = Pt(6)
             para.paragraph_format.space_after = Pt(12)
 
@@ -403,6 +466,12 @@ def create_gost_document(elements, output_path, template_path=None):
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     doc.save(output_path)
+
+    if use_template:
+        from .frame_placeholders import patch_docx_headers
+
+        zn = (zachet_number or "").strip()
+        patch_docx_headers(output_path, zn)
 
     print(f"\n  ✅ Записано: {elements_written} элементов")
     print(f"  📂 Файл: {output_path} ({os.path.getsize(output_path)} байт)")

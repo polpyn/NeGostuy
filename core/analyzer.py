@@ -13,11 +13,11 @@ from docx import Document
 
 from .parser import (
     extract_images_from_docx,
-    collect_paragraphs,
+    collect_ordered_blocks,
     assign_numbers_globally,
     check_page_margins,
 )
-from .classifier import classify_element_simple, classify_all
+from .classifier import classify_element_simple, classify_all_from_blocks
 from .formatter import create_gost_document
 
 
@@ -27,6 +27,7 @@ GOST_CHECK = {
     "font_size": 14,
     "line_spacing": 1.5,
     "indent_cm": 1.25,
+    "figure_caption_font_size": 12,
 }
 
 
@@ -37,6 +38,22 @@ def check_gost_compliance(p, elem_type):
     """
     errors = []
     warnings = []
+
+    if elem_type == "figure_caption":
+        if p.get("font_name") and p["font_name"] != GOST_CHECK["font"]:
+            errors.append(
+                f'Шрифт: "{p["font_name"]}" → должен быть "{GOST_CHECK["font"]}"'
+            )
+        exp_cap = GOST_CHECK["figure_caption_font_size"]
+        if p.get("font_size_pt") is not None and abs(p["font_size_pt"] - exp_cap) > 0.6:
+            warnings.append(
+                f"Подпись к рисунку: {p['font_size_pt']}pt → рекомендуется {exp_cap}pt"
+            )
+        if errors:
+            return "error", errors, warnings
+        if warnings:
+            return "warning", errors, warnings
+        return "correct", errors, warnings
 
     # Шрифт
     if p.get("font_name") and p["font_name"] != GOST_CHECK["font"]:
@@ -82,13 +99,14 @@ def check_gost_compliance(p, elem_type):
         return "correct", errors, warnings
 
 
-def analyze_document(file_path, template_path=None):
+def analyze_document(file_path, template_path=None, zachet_number=None):
     """
     Главная функция — полный анализ и форматирование документа.
 
     Args:
         file_path: путь к исходному .docx
         template_path: путь к рамке .docx (необязательно)
+        zachet_number: номер зачётной книжки для подстановки в штамп {{nomer}}
 
     Returns:
         dict с результатами
@@ -100,7 +118,7 @@ def analyze_document(file_path, template_path=None):
         # === ШАГ 1: ПАРСИНГ ===
         extracted_images = extract_images_from_docx(file_path, temp_dir)
         doc = Document(file_path)
-        paragraphs = collect_paragraphs(doc, extracted_images)
+        blocks, paragraphs = collect_ordered_blocks(doc, extracted_images)
 
         # === ШАГ 2: КЛАССИФИКАЦИЯ И ПРОВЕРКА ===
         elements_detail = []
@@ -162,7 +180,9 @@ def analyze_document(file_path, template_path=None):
 
         # === ШАГ 3: ФОРМАТИРОВАНИЕ С РАМКОЙ ===
         numbering, is_list_item = assign_numbers_globally(paragraphs)
-        classified_elements = classify_all(paragraphs, numbering, is_list_item)
+        classified_elements = classify_all_from_blocks(
+            blocks, paragraphs, numbering, is_list_item
+        )
 
         output_dir = os.path.join(os.path.dirname(file_path), '..', 'results')
         os.makedirs(output_dir, exist_ok=True)
@@ -174,7 +194,8 @@ def analyze_document(file_path, template_path=None):
         create_gost_document(
             classified_elements,
             output_path,
-            template_path=template_path
+            template_path=template_path,
+            zachet_number=zachet_number,
         )
 
         if template_path:
