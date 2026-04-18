@@ -183,7 +183,7 @@ def upload_document(request):
     )
 
     try:
-        if process_document_task is not None:
+        if settings.ENABLE_ASYNC_PROCESSING and process_document_task is not None:
             try:
                 async_result = process_document_task.delay(
                     doc.id,
@@ -208,6 +208,8 @@ def upload_document(request):
             except Exception as celery_exc:
                 # Локальный fallback: Redis/Celery недоступен — обрабатываем синхронно.
                 print(f"Celery недоступен, fallback на синхронную обработку: {celery_exc}")
+        elif not settings.ENABLE_ASYNC_PROCESSING:
+            print("Асинхронная обработка отключена (ENABLE_ASYNC_PROCESSING=0), запускаем синхронно.")
 
         # Fallback: если Celery не установлен/не запущен, обрабатываем синхронно
         doc.status = 'parsing'
@@ -259,6 +261,7 @@ def upload_document(request):
                 'processing_time': round(processing_time, 2),
                 'has_template': bool(template_path),
                 'zachet_received': zachet_number,
+                'ai_postprocess': result_data.get('ai_postprocess', {}),
             },
             'elements': result_data.get('elements_detail', []),
         })
@@ -344,6 +347,7 @@ def document_report(request, doc_id):
                 'warnings_count': result.warnings_count,
                 'grade': result.grade,
                 'processing_time': result.processing_time,
+                'ai_postprocess': (result.report_json or {}).get('ai_postprocess', {}),
             }
         })
 

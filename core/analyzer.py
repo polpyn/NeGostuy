@@ -19,6 +19,7 @@ from .parser import (
 )
 from .classifier import classify_element_simple, classify_all_from_blocks
 from .formatter import create_gost_document
+from .ai_postprocess import improve_doc_structure_with_ai
 
 
 # Параметры ГОСТ для проверки
@@ -197,6 +198,7 @@ def analyze_document(file_path, template_path=None, zachet_number=None):
             template_path=template_path,
             zachet_number=zachet_number,
         )
+        ai_postprocess = improve_doc_structure_with_ai(output_path)
 
         if template_path:
             print(f"✅ Документ создан С РАМКОЙ: {output_path}")
@@ -218,8 +220,10 @@ def analyze_document(file_path, template_path=None, zachet_number=None):
             'report': {
                 'errors': errors_list,
                 'summary': dict(type_counts),
+                'ai_postprocess': ai_postprocess,
             },
             'output_path': output_path,
+            'ai_postprocess': ai_postprocess,
         }
 
     finally:
