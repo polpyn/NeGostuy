@@ -1,0 +1,555 @@
+==========================================================================================
+ФАЙЛ: неправильно.docx
+==========================================================================================
+
+-- Секции --
+  section 0: {'page_width_cm': 21.0, 'page_height_cm': 29.7, 'margin_left_cm': 3.0, 'margin_right_cm': 1.5, 'margin_top_cm': 2.0, 'margin_bottom_cm': 2.0}
+  section 1: {'page_width_cm': 21.0, 'page_height_cm': 29.7, 'margin_left_cm': 3.0, 'margin_right_cm': 1.5, 'margin_top_cm': 1.25, 'margin_bottom_cm': 2.5}
+
+-- Стили используемые --
+  Normal                                   : 195
+  Normal (Web)                             : 42
+  List Paragraph                           : 14
+  Heading 1                                : 14
+  No Spacing                               : 12
+  Heading 2                                : 11
+  Heading 4                                : 8
+  Heading 3                                : 4
+
+-- Таблиц в документе --
+  tables: 3
+
+-- Абзацы (кратко) --
+  paragraph count: 300
+
+-- Подробный обход (первые 200 абзацев) --
+  [000]                      style=Normal|al=-|ls=1.0
+        TEXT: 
+  [001]                      style=Normal|al=J|ls=1.5
+        TEXT: 
+  [002]                      style=Normal|al=J|ls=1.5
+        TEXT: 
+  [003]                      style=Normal|al=-|fonts=[-/14.0pt/B]
+        TEXT: введение
+  [004]                      style=Normal|al=J|fli=1.25cm|ls=1.0|fonts=[-/14.0pt/]
+        TEXT: Данный документ является пояснительной запиской к курсовому проекту на тему: Telegram-бот для знакомств студентов ККРИТ …
+  [005]                      style=Normal|al=J|ls=1.0|fonts=[-/14.0pt/]
+        TEXT: Разработанный программный продукт предназначен для автоматизации процесса знакомств среди студентов Красноярского коллед…
+  [006]                      style=Normal|al=J|fli=1.25cm|ls=1.0
+        TEXT: 
+  [007]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [008]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [009]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [010]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [011]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [012]                      style=Normal|al=J|ls=1.5
+        TEXT: 
+  [013]                      style=Normal|al=-|fonts=[-/Nonept/]
+        TEXT: 1. Техническое задание
+  [014]                      style=Normal|al=-|fonts=[-/14.0pt/B]
+        TEXT: 1.1 Наименование и область применения
+  [015]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/12.0pt/,-/12.0pt/UP]
+        TEXT: В Проект представляет собой Telegram-бот «Ищу тебя ККРИТ», реализованный с использованием языка программирования Python …
+  [016]                      style=Normal|al=-|fonts=[-/Nonept/]
+        TEXT: 1.2 Основание для разработки
+  [017]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/12.0pt/]
+        TEXT: Основанием для разработки является задание курсовой работы в рамках дисциплины МДК.01.01 «Разработка программных модулей…
+  [018]                      style=Heading 2|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: 1.3 Назначение разработки
+  [019]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Цель бота — упрощение процесса знакомства и общения студентов. Функционал включает:
+  [020]                      style=List Paragraph|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Регистрацию и заполнение анкеты с личной информацией (имя, возраст, группа, интересы, фотография);
+  [021]                      style=List Paragraph|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Просмотр анкет других пользователей;
+  [022]                      style=List Paragraph|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Отправку лайков анкетам и получение уведомлений о взаимных симпатиях;
+  [023]                      style=List Paragraph|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Формирование кликабельных ссылок на профили пользователей для начала общения;
+  [024]                      style=List Paragraph|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Удобный интерфейс для взаимодействия с ботом через команды и кнопки.
+  [025]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Бот обеспечивает удобное сохранение и обработку пользовательских данных, предоставляя интуитивный интерфейс для взаимоде…
+  [026]                      style=Heading 2|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/B]
+        TEXT: 1.4 Технические требования к программе
+  [027]                      style=Heading 3|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: 1.4.1 Требования к функциональным характеристикам
+  [028]                      style=Normal (Web)|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Чат-бот должен содержать следующие функции:
+  [029]                      style=Normal (Web)|al=J|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/UP]
+        TEXT: Регистрация пользователя через команду /start и заполнение анкеты;
+  [030]                      style=Normal (Web)|al=J|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/UP]
+        TEXT: Просмотр анкет других пользователей с помощью кнопки «следующий»;
+  [031]                      style=Normal (Web)|al=J|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/UP]
+        TEXT: Возможность поставить лайк анкете через кнопку «лайк»;
+  [032]                      style=Normal (Web)|al=J|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/UP]
+        TEXT: Отправка уведомлений о взаимных лайках с кликабельными ссылками на профили пользователей;
+  [033]                      style=Normal (Web)|al=J|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/UP]
+        TEXT: Хранение анкет и лайков в базе данных sqlite;
+  [034]                      style=Normal (Web)|al=J|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/UP]
+        TEXT: Удаление анкет и лайков при необходимости.
+  [035]                      style=Normal (Web)|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Программа должна обладать:
+  [036]                      style=Normal (Web)|al=J|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/UP]
+        TEXT: Понятным и удобным интерфейсом;
+  [037]                      style=Normal (Web)|al=J|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/UP]
+        TEXT: Простой навигацией через команды и инлайн-кнопки;
+  [038]                      style=Normal (Web)|al=J|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/UP]
+        TEXT: Корректным отображением ссылок и уведомлений.
+  [039]                      style=Normal (Web)|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: К чат-боту должна быть написана подробная документация: руководство пользователя и пояснительная записка.
+  [040]                      style=Normal (Web)|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Разрабатываемая программа должна обладать всеми характеристиками качества, а именно: интуитивно понятный и удобный интер…
+  [041]                      style=Normal|al=-|fonts=[-/14.0pt/]
+        TEXT: 1.4.2. Требования к надежности
+  [042]                      style=Normal (Web)|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Чат-бот должен корректно выполнять все заявленные функции и быть пригодным для постоянного использования.
+  [043]                      style=Normal (Web)|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Меры по обеспечению надежности:
+  [044]                      style=Normal (Web)|al=J|li=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: тестирование бота на корректную обработку команд и лайков;
+  [045]                      style=Normal (Web)|al=J|li=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: валидация входных данных (например, проверка корректности имени и возраста);
+  [046]                      style=Normal (Web)|al=J|li=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: обработка ошибок (например, отсутствие анкеты);
+  [047]                      style=Normal (Web)|al=J|li=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: мониторинг стабильности работы базы данных;
+  [048]                      style=Normal (Web)|al=J|li=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: логирование для отслеживания ошибок (например, вывод в консоль).
+  [049]                      style=Heading 3|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: 1.4.3 Требования к условиям эксплуатации
+  [050]                      style=Normal (Web)|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Для работы с ботом не требуются специальные знания, достаточно базовых навыков использования Telegram.
+  [051]                      style=Normal (Web)|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Минимальные требования:
+  [052]                      style=Normal (Web)|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: устройство с установленным приложением Telegram (Android, iOS, Windows, macOS или веб-версия);
+  [053]                      style=Normal (Web)|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: доступ к интернету;
+  [054]                      style=Normal (Web)|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: 10 МБ свободной памяти для базы данных на сервере бота;
+  [055]                      style=Normal (Web)|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: разрешение на отправку сообщений боту.
+  [056]                      style=Normal (Web)|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Серверная часть:
+  [057]                      style=Normal (Web)|al=J|li=0.0cm|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Python 3.10+ с библиотекой python-telegram-bot версии 20.7+;
+  [058]                      style=Normal (Web)|al=J|li=0.0cm|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: SQLite для хранения данных.
+  [059]                      style=Heading 2|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/B]
+        TEXT: 1.5 Структура таблиц базы данных
+  [060]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Типы данных БД представлены в таблицах 1-2. ER-диаграмма представлена в Приложении В.
+  [061]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Таблица 1 – Структура таблицы «anketa»
+  [062]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [063]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Таблица 2 – Структура таблицы «likes»
+  [064]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [065]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Примечания:
+  [066]                      style=Normal|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: первичный ключ таблицы likes — комбинация liking_user_id и liked_user_id;
+  [067]                      style=Normal|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: поле chat_id в таблице anketa уникально, чтобы предотвратить дублирование анкет.
+  [068]                      style=Heading 2|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/B]
+        TEXT: 1.6 Информационное обеспечение
+  [069]                      style=Heading 3|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: 1.6.1 Описание входных данных
+  [070]                      style=Normal (Web)|al=J|li=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Команды Telegram:
+  [071]                      style=Normal (Web)|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: /start — запуск бота и регистрация анкеты;
+  [072]                      style=Normal (Web)|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: /admin — доступ к админ-панели (для администратора).
+  [073]                      style=Normal (Web)|al=J|li=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Данные анкеты:
+  [074]                      style=Normal (Web)|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: имя: строка, до 50 символов;
+  [075]                      style=Normal (Web)|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: возраст: целое число (16–100);
+  [076]                      style=Normal (Web)|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: учебная группа: строка;
+  [077]                      style=Normal (Web)|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: описание: строка;
+  [078]                      style=Normal (Web)|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: фотография: изображение в формате, поддерживаемом Telegram.
+  [079]                      style=Normal (Web)|al=J|li=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Лайки: Нажатие кнопки «Лайк» с передачей liked_user_id.
+  [080]                      style=Normal (Web)|al=J|li=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Административные действия:
+  [081]                      style=Normal (Web)|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Ввод ID анкеты для удаления;
+  [082]                      style=Normal (Web)|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Запрос статистики через кнопку «Посмотреть статистику».
+  [083]                      style=Heading 3|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: 1.6.2 Описание выходных данных
+  [084]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Выходной информацией являются сообщения Telegram, обработанные и представленные в удобном для пользователя виде:
+  [085]                      style=List Paragraph|al=J|fli=-1.27cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: «Приветственное сообщение», данное сообщение содержит информацию о боте и его назначении;
+  [086]                      style=List Paragraph|al=J|fli=-1.27cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: «Анкета», данное сообщение отображает данные пользователя (имя, возраст, учебная группа, описание, фотография). Пример о…
+  [087]                      style=List Paragraph|al=J|fli=-1.27cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: «Уведомление о взаимном лайке», данное сообщение содержит информацию о взаимной симпатии и кликабельную ссылку для начал…
+  [088]                      style=List Paragraph|al=J|fli=-1.27cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: «Статистика», данное сообщение доступно администратору и отображает общее количество анкет в базе данных.
+  [089]                      style=Heading 1|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [090]                      style=Heading 1|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [091]                      style=Heading 1|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [092]                      style=Heading 1|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [093]                      style=Heading 1|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [094]                      style=Heading 1|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [095]                      style=Normal|al=J
+        TEXT: 
+  [096]                      style=Normal|al=J
+        TEXT: 
+  [097]                      style=Normal|al=J
+        TEXT: 
+  [098]                      style=Normal|al=J
+        TEXT: 
+  [099]                      style=Normal|al=J
+        TEXT: 
+  [100]                      style=Normal|al=J
+        TEXT: 
+  [101]                      style=Normal|al=J
+        TEXT: 
+  [102]                      style=Normal|al=J
+        TEXT: 
+  [103]                      style=Normal|al=J
+        TEXT: 
+  [104]                      style=Normal|al=J
+        TEXT: 
+  [105]                      style=Normal|al=J
+        TEXT: 
+  [106]                      style=Normal|al=J
+        TEXT: 
+  [107]                      style=Heading 1|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [108]                      style=Normal|al=J
+        TEXT: 
+  [109]                      style=Normal|al=J
+        TEXT: 
+  [110]                      style=Normal|al=J
+        TEXT: 
+  [111]                      style=Heading 1|al=J|fli=1.25cm|ls=1.5|fonts=[-/Nonept/]
+        TEXT: 2 Специальная часть
+  [112]                      style=Heading 2|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/B]
+        TEXT: 2.1 Алгоритм решения задачи
+  [113]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/UP]
+        TEXT: Блок-схема алгоритма работы бота представлена в Приложении Б.
+  [114]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Описание блок-схемы алгоритма:
+  [115]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 1 – Начало: Запуск бота, ожидание команды /start;
+  [116]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 2 – Регистрация анкеты;
+  [117]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 2.1 – Пользователь отправляет /start;
+  [118]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 2.2 – Бот запрашивает имя, возраст, группу, описание, фото;
+  [119]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 2.3 – Данные сохраняются в таблицу anketa;
+  [120]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/B]
+        TEXT: Блок 3 – Просмотр анкет;
+  [121]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 3.1 – Пользователь выбирает «Смотреть»;
+  [122]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 3.2 – Бот отображает анкету другого пользователя с кнопками «Лайк», «Следующая», «Предыдущая», «Завершить»;
+  [123]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/B]
+        TEXT: Блок 4 – Обработка лайка;
+  [124]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 4.1 – Проверка: пользователь не лайкает сам себя и не дублирует лайк;
+  [125]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 4.2 – Сохранение лайка в таблицу likes;
+  [126]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 4.3 – Проверка взаимности (есть ли обратный лайк);
+  [127]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 4.4 – При взаимном лайке отправка уведомлений с ссылками;
+  [128]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 5 – Редактирование анкеты;
+  [129]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 5.1 – Пользователь выбирает поле для изменения (имя, возраст и т.д.);
+  [130]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 5.2 – Обновление данных в базе;
+  [131]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 6 – Администрирование;
+  [132]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 6.1 – Удаление анкеты по ID;
+  [133]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 6.2 – Вывод статистики;
+  [134]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Блок 7 –  Конец: Пользователь начинает чат по кликабельной ссылке.
+  [135]                      style=Heading 2|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/B]
+        TEXT: 2.2 Описание программы
+  [136]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Telegram-бот «Ищу тебя ККРИТ» разработан для знакомств студентов ККРИТ. Он написан на Python 3.13+ с использованием библ…
+  [137]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Основной файл main.py содержит всю логику: инициализацию бота с токеном, подключение к базе через sqlite3.connect('anket…
+  [138]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Ключевые функции: safe_db_execute выполняет SQL-запросы с тремя попытками при ошибках, get_user_identifier получает ID и…
+  [139]                      style=Heading 2|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [140]                      style=Heading 2|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [141]                      style=Normal|al=-
+        TEXT: 
+  [142]                      style=Heading 2|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/B]
+        TEXT: 2.3 Руководство пользователя
+  [143]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Инструкции по использованию Telegram-бота «Ищу тебя ККРИТ» представлены в таблице ниже.
+  [144]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [145]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [146]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [147]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [148]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [149]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [150]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [151]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [152]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [153]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [154]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [155]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [156]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [157]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [158]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [159]                      style=Heading 2|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/B]
+        TEXT: 2.4 Руководства программиста
+  [160]                      style=Heading 4|al=J|li=1.25cm|fli=-0.0cm|ls=1.5|fonts=[Times New Roman/14.0pt/]
+        TEXT: Общая структура:
+  [161]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Приложение представляет собой Telegram-бот «Ищу тебя ККРИТ», предназначенный для знакомств студентов ККРИТ. Оно включает…
+  [162]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Интерфейс:
+  [163]                      style=No Spacing|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: главное меню с кнопками «Анкета», «Моя анкета», «Редактировать анкету», «Смотреть», «Лайки», отображаемое после команды …
+  [164]                      style=No Spacing|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: пошаговый ввод данных анкеты (имя, возраст, группа, описание, фото) через текстовые сообщения;
+  [165]                      style=No Spacing|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: просмотр анкет с инлайн-кнопками «Лайк», «Следующая», «Предыдущая», «Завершить»;
+  [166]                      style=No Spacing|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: уведомления о взаимных лайках с кликабельными ссылками в формате MarkdownV2;
+  [167]                      style=No Spacing|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: админ-панель (доступна по /admin) с кнопками для удаления анкет и просмотра статистики.
+  [168]                      style=No Spacing|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Функционал:
+  [169]                      style=No Spacing|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: регистрация, редактирование и просмотр анкет пользователей;
+  [170]                      style=No Spacing|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: просмотр анкет других пользователей с навигацией («Следующая», «Предыдущая»);
+  [171]                      style=No Spacing|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: отправка лайков, проверка взаимности и уведомления о взаимных симпатиях;
+  [172]                      style=No Spacing|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: просмотр списка пользователей, лайкнувших анкету;
+  [173]                      style=No Spacing|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: админ-функции: удаление анкет по chat_id и отображение
+  [174]                      style=No Spacing|al=J|li=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Ключевые функции:
+  [175]                      style=Heading 4|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[Times New Roman/14.0pt/]
+        TEXT: обработка команд /start и /admin для инициализации бота и доступа к админ-панели;
+  [176]                      style=Heading 4|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[Times New Roman/14.0pt/]
+        TEXT: регистрация анкет через функции process_name_step, process_age_step и другие;
+  [177]                      style=Heading 4|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[Times New Roman/14.0pt/]
+        TEXT: обработка лайков через handle_like, включая проверку условий, сохранение лайка и отправку уведомлений;
+  [178]                      style=Heading 4|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[Times New Roman/14.0pt/]
+        TEXT: навигация по анкетам через show_profile, next_profile, prev_profile;
+  [179]                      style=Heading 4|al=J|li=2.5cm|fli=-1.25cm|ls=1.5|fonts=[Times New Roman/14.0pt/]
+        TEXT: безопасное выполнение SQL-запросов через safe_db_execute с обработкой ошибок.
+  [180]                      style=Heading 4|al=J|fli=1.25cm|ls=1.5|fonts=[Times New Roman/14.0pt/]
+        TEXT: Назначение и условия применения, настройка:
+  [181]                      style=Heading 4|al=J|fli=1.25cm|ls=1.5|fonts=[Times New Roman/14.0pt/,Times New Roman/14.0pt/UP]
+        TEXT: Telegram-бот выполняет функцию управления анкетами и взаимодействия между пользователями для знакомств. Для работы требу…
+  [182]                      style=Heading 2|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/B]
+        TEXT: 2.5 Контрольный пример
+  [183]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Целью контрольного примера является проверка работоспособности Telegram-бота «Ищу тебя ККРИТ». Необходимо определить, пр…
+  [184]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Для работы с ботом нужно запустить его и в Telegram найти бота по имени (@LovekkritBot).
+  [185]                      style=Normal|al=C|ls=1.5
+        TEXT: 
+  [186]                      style=Normal|al=C|ls=1.5|fonts=[-/12.0pt/]
+        TEXT: Рисунок 1 – Нахождение бота в поиске
+  [187]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Далее запустить бота, отправив команду /start. Бот должен отобразить главное меню с кнопками «Анкета», «Моя анкета», «Ре…
+  [188]                      style=Normal|al=C|ls=1.5
+        TEXT: 
+  [189]                      style=Normal|al=C|ls=1.5|fonts=[-/12.0pt/]
+        TEXT: Рисунок 2 – Активация бота
+  [190]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/UP]
+        TEXT: Регистрация анкеты пользователя. Надо нажать на «Анкета» и последовательно вводить данные: имя, возраст, учебную группу,…
+  [191]                      style=Normal|al=C|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: 
+  [192]                      style=Normal|al=C|ls=1.5|fonts=[-/12.0pt/]
+        TEXT: Рисунок 3, 4 – Заполнение анкеты
+  [193]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Можно проверить анкету, нажав «Моя анкета».
+  [194]                      style=Normal|al=C|ls=1.5
+        TEXT: 
+  [195]                      style=Normal|al=C|ls=1.5|fonts=[-/12.0pt/]
+        TEXT: Рисунок 5 – Проверка отображения анкеты
+  [196]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Далее просмотр анкет, нажав «Смотреть».
+  [197]                      style=Normal|al=C|ls=1.5
+        TEXT: 
+  [198]                      style=Normal|al=C|ls=1.5|fonts=[-/12.0pt/]
+        TEXT: Рисунок 6 – Просмотр анкет
+  [199]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Чтобы листать анкеты надо использовать кнопки «Следующая» и «Предыдущая».
+  [200]                      style=Normal|al=C|ls=1.5
+        TEXT: 
+  [201]                      style=Normal|al=C|ls=1.5|fonts=[-/12.0pt/]
+        TEXT: Рисунок 7 – Пролистывание анкет
+  [202]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Если понравился пользователь, то можно отправить ему лайк, нажав на «Лайк» под анкетой.
+  [203]                      style=Normal|al=C|ls=1.5
+        TEXT: 
+  [204]                      style=Normal|al=C|ls=1.5|fonts=[-/12.0pt/]
+        TEXT: Рисунок 8 – Отправка лайка
+  [205]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: При взаимной лайке с пользователем, придет уведомление с кликабельной ссылкой на аккаунт «Взаимный лайк! Вы можете напис…
+  [206]                      style=Normal|al=C|ls=1.5
+        TEXT: 
+  [207]                      style=Normal|al=C|ls=1.5|fonts=[-/12.0pt/]
+        TEXT: Рисунок 9 – Получение кликабельной ссылки при взаимности
+  [208]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Чтобы убедиться, что бот дал рабочую ссылку, надо перейти по ней.
+  [209]                      style=Normal|al=C|ls=1.5
+        TEXT: 
+  [210]                      style=Normal|al=C|ls=1.5|fonts=[-/12.0pt/]
+        TEXT: Рисунок 10 – Проверка ссылки (открылся чат)
+  [211]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Также можно проверить список лайков, нажав «Лайки». Отображаются анкеты пользователей, которые отправили лайк.
+  [212]                      style=Normal|al=C|ls=1.5
+        TEXT: 
+  [213]                      style=Normal|al=C|ls=1.5|fonts=[-/12.0pt/]
+        TEXT: Рисунок 11 – Просмотр лайков от пользователей
+  [214]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Если нужно что-то изменить в своей анкете, то есть кнопка «Редактировать анкету». Далее выбрать поле (например, описание…
+  [215]                      style=Normal|al=C|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: 
+  [216]                      style=Normal|al=C|ls=1.5|fonts=[-/12.0pt/]
+        TEXT: Рисунок 12, 13, 14 – Редактирование анкеты
+  [217]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Для проверки админ-функций надо использовать аккаунт с ADMIN_ID, отправив боту /admin. Затем «Посмотреть статистику» или…
+  [218]                      style=Normal|al=C|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: 
+  [219]                      style=Normal|al=C|ls=1.5|fonts=[-/12.0pt/]
+        TEXT: Рисунок 15, 16 – Проверка функций админа
+  [220]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/UP]
+        TEXT: При просмотре анкет удаленный пользователь не отображается.
+  [221]                      style=Normal|al=C|ls=1.5
+        TEXT: 
+  [222]                      style=Normal|al=C|ls=1.5|fonts=[-/12.0pt/]
+        TEXT: Рисунок 17 – Проверка отображается ли удаленный пользователь
+  [223]                      style=Normal|al=-|fonts=[-/12.0pt/B,-/12.0pt/BUP]
+        TEXT: Заключение
+  [224]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/UP]
+        TEXT: В рамках курсового проекта я разработала Telegram-бота «Ищу тебя ККРИТ», который помогает студентам ККРИТ знакомиться др…
+  [225]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Разработка велась с использованием Python 3.13+, библиотеки python-telegram-bot и SQLite, что позволило мне создать удоб…
+  [226]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/,-/14.0pt/UP]
+        TEXT: В процессе работы я изучила и применила современные инструменты разработки, научилась проектировать базы данных, обрабат…
+  [227]                      style=Normal|al=J|fli=1.25cm|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Выполняя проект, я углубила знания, полученные на междисциплинарном курсе «Разработка программных модулей», научилась си…
+  [228]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [229]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [230]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [231]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [232]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [233]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [234]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [235]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [236]                      style=Normal|al=J|fli=1.25cm|ls=1.5
+        TEXT: 
+  [237]                      style=Heading 1|al=C|fonts=[-/Nonept/UP]
+        TEXT: ПЕРЕЧЕНЬ СОКРАЩЕНИЙ
+  [238]                      style=Normal|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: ККРИТ — Красноярский колледж радиоэлектроники и информационных технологий
+  [239]                      style=Normal|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: Telegram API — Интерфейс программирования приложений Telegram
+  [240]                      style=Normal|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: SQLite — Лёгкая реляционная система управления базами данных
+  [241]                      style=Normal|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: SQL — Язык структурированных запросов (Structured Query Language)
+  [242]                      style=Normal|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: ПЗ — Пояснительная записка
+  [243]                      style=Normal|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: ID — Идентификатор
+  [244]                      style=Normal|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: chat_id — Уникальный идентификатор пользователя в Telegram
+  [245]                      style=Normal|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: МП — Мобильное приложение (в вашем случае применимо к Telegram-боту как программному продукту)
+  [246]                      style=Normal|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: СУБД — Система управления базами данных
+  [247]                      style=Normal|al=J|ls=1.5|fonts=[-/14.0pt/]
+        TEXT: MarkdownV2 — Формат разметки текста, используемый в Telegram для форматирования сообщений
+  [248]                      style=Normal|al=J|ls=1.5
+        TEXT: 
+  [249]                      style=Normal|al=J|ls=1.5
+        TEXT: 
+
+-- Сводка разрывов страницы --
+  НЕТ ЯВНЫХ РАЗРЫВОВ СТРАНИЦ (ни pageBreakBefore, ни w:br type=page)
+
+-- Поле TOC --
+  found: False
+
+-- Поиск явных потенциальных заголовков разделов --
+  [003] —no-break— style=Normal          fonts=['-/14.0pt/B'] :: введение
+  [014] —no-break— style=Normal          fonts=['-/14.0pt/B'] :: 1.1 Наименование и область применения
+  [016] —no-break— style=Normal          fonts=['-/Nonept/'] :: 1.2 Основание для разработки
+  [018] —no-break— style=Heading 2       fonts=['-/14.0pt/'] :: 1.3 Назначение разработки
+  [026] —no-break— style=Heading 2       fonts=['-/14.0pt/B'] :: 1.4 Технические требования к программе
+  [054] —no-break— style=Normal (Web)    fonts=['-/14.0pt/'] :: 10 МБ свободной памяти для базы данных на сервере бота;
+  [059] —no-break— style=Heading 2       fonts=['-/14.0pt/B'] :: 1.5 Структура таблиц базы данных
+  [068] —no-break— style=Heading 2       fonts=['-/14.0pt/B'] :: 1.6 Информационное обеспечение
+  [111] —no-break— style=Heading 1       fonts=['-/Nonept/'] :: 2 Специальная часть
+  [112] —no-break— style=Heading 2       fonts=['-/14.0pt/B'] :: 2.1 Алгоритм решения задачи
+  [135] —no-break— style=Heading 2       fonts=['-/14.0pt/B'] :: 2.2 Описание программы
+  [142] —no-break— style=Heading 2       fonts=['-/14.0pt/B'] :: 2.3 Руководство пользователя
+  [159] —no-break— style=Heading 2       fonts=['-/14.0pt/B'] :: 2.4 Руководства программиста
+  [161] —no-break— style=Normal          fonts=['-/14.0pt/'] :: Приложение представляет собой Telegram-бот «Ищу тебя ККРИТ», предназначенный для
+  [182] —no-break— style=Heading 2       fonts=['-/14.0pt/B'] :: 2.5 Контрольный пример
+  [223] —no-break— style=Normal          fonts=['-/12.0pt/B', '-/12.0pt/BUP'] :: Заключение
+  [286] —no-break— style=Heading 1       fonts=['-/Nonept/UP'] :: ПРИЛОЖЕНИЕ А
+  [289] —no-break— style=Heading 1       fonts=['-/Nonept/', '-/Nonept/UP'] :: ПРИЛОЖЕНИЕ Б
+  [296] —no-break— style=Heading 1       fonts=['-/Nonept/UP'] :: ПРИЛОЖЕНИЕ В
+
+
+

@@ -189,7 +189,10 @@ def upload_document(request):
     else:
         print("Номер зачётной книжки: не передан или пустой (проверьте поля student_id / zachet_number)")
 
-    work_type = request.data.get('work_type', 'coursework')
+    # work_type из запроса: «kursovaya» → режим курсовой, всё остальное → ГОСТ
+    _raw_work_type = _multipart_plain_value(request, "work_type", "doc_type") or "gost"
+    work_type = "kursovaya" if _raw_work_type.lower() in ("kursovaya", "курсовая", "coursework_fmt") else "gost"
+    print(f"Тип документа: {work_type} (из запроса: {_raw_work_type!r})")
 
     # Сохраняем документ в БД и ставим в очередь Celery
     doc = Document.objects.create(
@@ -210,6 +213,7 @@ def upload_document(request):
                     template_path,
                     template_is_temp,
                     zachet_number or "",
+                    work_type,
                 )
                 doc.task_id = async_result.id
                 doc.save(update_fields=['task_id'])
@@ -240,6 +244,7 @@ def upload_document(request):
             doc.original_file.path,
             template_path=template_path,
             zachet_number=zachet_number or None,
+            doc_type=work_type,
         )
         processing_time = time.time() - start_time
         proc_result = ProcessingResult.objects.create(

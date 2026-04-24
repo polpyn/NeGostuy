@@ -9,7 +9,7 @@ from .models import Document, ProcessingResult
 
 
 @shared_task(bind=True)
-def process_document_task(self, doc_id: int, template_path: str | None, template_is_temp: bool, zachet_number: str) -> dict:
+def process_document_task(self, doc_id: int, template_path: str | None, template_is_temp: bool, zachet_number: str, doc_type: str = "gost") -> dict:
     """
     Фоновая обработка документа:
     - запускает analyze_document
@@ -27,6 +27,7 @@ def process_document_task(self, doc_id: int, template_path: str | None, template
             doc.original_file.path,
             template_path=template_path,
             zachet_number=(zachet_number or '').strip() or None,
+            doc_type=doc_type or "gost",
         )
         processing_time = time.time() - start_time
 

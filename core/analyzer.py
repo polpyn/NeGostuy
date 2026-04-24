@@ -20,6 +20,8 @@ from .parser import (
 from .classifier import classify_element_simple, classify_all_from_blocks
 from .formatter import create_gost_document
 from .ai_postprocess import improve_doc_structure_with_ai
+from .kursovaya_classifier import classify_kursovaya_blocks
+from .kursovaya_formatter import create_kursovaya_document
 
 
 # Параметры ГОСТ для проверки
@@ -100,7 +102,7 @@ def check_gost_compliance(p, elem_type):
         return "correct", errors, warnings
 
 
-def analyze_document(file_path, template_path=None, zachet_number=None):
+def analyze_document(file_path, template_path=None, zachet_number=None, doc_type="gost"):
     """
     Главная функция — полный анализ и форматирование документа.
 
@@ -108,6 +110,7 @@ def analyze_document(file_path, template_path=None, zachet_number=None):
         file_path: путь к исходному .docx
         template_path: путь к рамке .docx (необязательно)
         zachet_number: номер зачётной книжки для подстановки в штамп {{nomer}}
+        doc_type: «gost» (по умолчанию) или «kursovaya»
 
     Returns:
         dict с результатами
@@ -179,33 +182,39 @@ def analyze_document(file_path, template_path=None, zachet_number=None):
         else:
             grade = f"❌ ТРЕБУЕТ ИСПРАВЛЕНИЯ — {total_errors} ошибок"
 
-        # === ШАГ 3: ФОРМАТИРОВАНИЕ С РАМКОЙ ===
-        numbering, is_list_item = assign_numbers_globally(paragraphs)
-        classified_elements = classify_all_from_blocks(
-            blocks, paragraphs, numbering, is_list_item
-        )
-
+        # === ШАГ 3: ФОРМАТИРОВАНИЕ ===
         output_dir = os.path.join(os.path.dirname(file_path), '..', 'results')
         os.makedirs(output_dir, exist_ok=True)
-
         base_name = os.path.splitext(os.path.basename(file_path))[0]
-        output_path = os.path.join(output_dir, f"{base_name}_GOST.docx")
 
-        # ПЕРЕДАЁМ РАМКУ В ФОРМАТТЕР
-        create_gost_document(
-            classified_elements,
-            output_path,
-            template_path=template_path,
-            zachet_number=zachet_number,
-        )
-        ai_postprocess = improve_doc_structure_with_ai(output_path)
-
-        if template_path:
-            print(f"✅ Документ создан С РАМКОЙ: {output_path}")
+        if doc_type == "kursovaya":
+            # ── Курсовая работа ────────────────────────────────────────
+            output_path = os.path.join(output_dir, f"{base_name}_kursovaya.docx")
+            kursovaya_elements = classify_kursovaya_blocks(blocks, paragraphs)
+            create_kursovaya_document(kursovaya_elements, output_path)
+            ai_postprocess = {}
+            print(f"✅ Курсовая отформатирована: {output_path}")
         else:
-            print(f"✅ Документ создан без рамки: {output_path}")
+            # ── ГОСТ (исходный режим) ──────────────────────────────────
+            output_path = os.path.join(output_dir, f"{base_name}_GOST.docx")
+            numbering, is_list_item = assign_numbers_globally(paragraphs)
+            classified_elements = classify_all_from_blocks(
+                blocks, paragraphs, numbering, is_list_item
+            )
+            create_gost_document(
+                classified_elements,
+                output_path,
+                template_path=template_path,
+                zachet_number=zachet_number,
+            )
+            ai_postprocess = improve_doc_structure_with_ai(output_path)
+            if template_path:
+                print(f"✅ Документ создан С РАМКОЙ: {output_path}")
+            else:
+                print(f"✅ Документ создан без рамки: {output_path}")
 
-        images_count = sum(1 for e in classified_elements if e["type"] == "image")
+        _all_elems = kursovaya_elements if doc_type == "kursovaya" else classified_elements
+        images_count = sum(1 for e in _all_elems if e.get("type") == "image")
 
         return {
             'total_elements': len(paragraphs),
