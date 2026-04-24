@@ -8,7 +8,11 @@ import mimetypes
 
 # Эти строки помогут туннелю передавать файлы без обрывов
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-CSRF_TRUSTED_ORIGINS = ['https://*.pinggy.link', 'https://*.lhr.life']
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.pinggy.link',
+    'https://*.lhr.life',
+    'https://*.localhost.run',
+]
 mimetypes.add_type("text/css", ".css", True)
 mimetypes.add_type("text/javascript", ".js", True)
 
@@ -18,7 +22,17 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'negostuy-secret-key-change-in-production')
 
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes', 'on')
 
-ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '*').split(',') if h.strip()]
+# Пустой ALLOWED_HOSTS в .env даёт [] → DisallowedHost / 400. Префикс «.lhr.life» разрешает
+# все поддомены туннеля (см. Django validate_host / is_same_domain).
+_allowed_raw = (os.getenv('ALLOWED_HOSTS', '*').strip() or '*')
+ALLOWED_HOSTS = [h.strip() for h in _allowed_raw.split(',') if h.strip()]
+if not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ['*']
+elif ALLOWED_HOSTS != ['*']:
+    # С точкой в начале — все поддомены (Django 5.1+: без точки только exact match).
+    for _tunnel in ('.lhr.life', '.localhost.run'):
+        if _tunnel not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(_tunnel)
 
 # ============================================================
 # ПРИЛОЖЕНИЯ
@@ -36,11 +50,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
 
-    # Наше приложение
-    'api',
+    # Наше приложение (ApiConfig — PRAGMA WAL для SQLite при нескольких клиентах)
+    'api.apps.ApiConfig',
 ]
 
 MIDDLEWARE = [
+    'negostuy.middleware.RequestLogMiddleware',
     'corsheaders.middleware.CorsMiddleware',      # CORS — чтобы frontend мог обращаться
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -97,6 +112,10 @@ if DB_ENGINE == 'django.db.backends.sqlite3':
         'default': {
             'ENGINE': DB_ENGINE,
             'NAME': BASE_DIR / 'db.sqlite3',
+            # Два клиента по туннелю одновременно шлют /api/upload/ — без WAL/таймаута часто «database is locked» → 500.
+            'OPTIONS': {
+                'timeout': 30,
+            },
         }
     }
 else:
@@ -232,9 +251,3 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Europe/Moscow'
-
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-CSRF_TRUSTED_ORIGINS = [
-    'https://*.pinggy.link',
-    'https://*.lhr.life'
-]

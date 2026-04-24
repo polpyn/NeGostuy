@@ -7,8 +7,19 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
+def _configure_stdio_utf8():
+    """На Windows консоль часто не UTF-8; print()/traceback с эмодзи или редким Unicode падают."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except (OSError, ValueError, AttributeError):
+                pass
+
+
 def main():
     """Run administrative tasks."""
+    _configure_stdio_utf8()
     load_dotenv(Path(__file__).resolve().parent / '.env')
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'negostuy.settings')
     try:

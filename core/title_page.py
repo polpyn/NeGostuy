@@ -10,10 +10,6 @@ def create_title_page(data, output_path, template_path=None):
 
     doc = Document(template_path)
 
-    # Собираем данные. 
-    # ВНИМАНИЕ: выводим в консоль, чтобы проверить, что пришло с сайта
-    print(f"DEBUG: Данные для титульника: {data}")
-
     # Словарь замен
     replacements = {
         "{{work_number}}": str(data.get('work_number', '')),
@@ -32,7 +28,6 @@ def create_title_page(data, output_path, template_path=None):
         
         for key, value in replacements.items():
             if key in full_text:
-                print(f"  --> Заменяю {key} на {value}") # Отладочное сообщение
                 # Делаем замену в собранном тексте
                 full_text = full_text.replace(key, value)
                 

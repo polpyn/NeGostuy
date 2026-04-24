@@ -16,6 +16,7 @@ import time
 import json
 import tempfile
 from copy import deepcopy
+from urllib.parse import quote
 
 from django.conf import settings
 from django.http import FileResponse, JsonResponse, HttpResponse
@@ -38,6 +39,25 @@ except Exception:
     AsyncResult = None
 
 from .models import Document, ProcessingResult, GOSTTemplate, ErrorStatistic
+
+
+def _attachment_content_disposition(filename: str) -> str:
+    """
+    Content-Disposition для скачивания: ASCII filename + RFC 5987 для кириллицы и прочего Unicode.
+    Иначе заголовок не кодируется в latin-1 или клиенты ломают имя файла.
+    """
+    filename = (filename or "download.docx").replace('"', "_")
+    try:
+        filename.encode("latin-1")
+        return f'attachment; filename="{filename}"'
+    except UnicodeEncodeError:
+        ascii_fallback = (
+            filename.encode("ascii", "ignore").decode("ascii").strip(". ") or "download.docx"
+        )
+        return (
+            f'attachment; filename="{ascii_fallback}"; '
+            f"filename*=UTF-8''{quote(filename, safe='')}"
+        )
 from core.analyzer import analyze_document
 try:
     from .tasks import process_document_task
@@ -620,7 +640,9 @@ def prepend_title_to_result(request, doc_id):
             content,
             content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         )
-        response['Content-Disposition'] = f'attachment; filename="GOST_with_title_{doc.filename}"'
+        response['Content-Disposition'] = _attachment_content_disposition(
+            f"GOST_with_title_{doc.filename}"
+        )
         return response
     except Document.DoesNotExist:
         return Response({'error': 'Документ не найден'}, status=404)
@@ -693,7 +715,7 @@ def generate_title_page(request):
         )
         work_num = data.get('work_number', '')
         fname = f'Титульный_лист_N{work_num}.docx' if work_num else 'Титульный_лист.docx'
-        response['Content-Disposition'] = f'attachment; filename="{fname}"'
+        response['Content-Disposition'] = _attachment_content_disposition(fname)
         return response
 
     except Exception as e:
