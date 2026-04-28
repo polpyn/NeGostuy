@@ -447,9 +447,13 @@ def create_gost_document(elements, output_path, template_path=None, zachet_numbe
         # === LIST_ITEM ===
         elif etype == "list_item":
             clean = re.sub(r'^[•\-–—\*●○◦]\s*', '', text)
+            # Кириллическую заглавную первую букву делаем строчной
+            if clean and re.match(r'^[А-ЯЁ]', clean):
+                clean = clean[0].lower() + clean[1:]
             run = para.add_run("— " + clean)
             set_font(run, bold=False)
-            para.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            # LEFT: JUSTIFY растягивает пробел после «—» на неполных строках
+            para.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
             para.paragraph_format.first_line_indent = GOST["indent"]
 
         # === PARAGRAPH ===

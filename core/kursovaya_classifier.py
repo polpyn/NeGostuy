@@ -33,6 +33,7 @@ SPECIAL_KEYWORDS = {
     "список источников",
     "список использованной литературы",
     "библиографический список",
+    "библиографическое описание",
     "перечень сокращений",
     "сокращения",
     "обозначения",
@@ -175,7 +176,6 @@ def classify_kursovaya_blocks(blocks: list, paragraphs: list) -> list:
                 "text": "",
                 "image_paths": p.get("image_paths", []),
             })
-            # Если вслед за изображением идёт подпись — она будет следующим элементом
             continue
 
         if etype == "figure_caption":
@@ -192,4 +192,71 @@ def classify_kursovaya_blocks(blocks: list, paragraphs: list) -> list:
             "text": p["text"],
         })
 
+    # ── Распознавание «;»-перечислений ──────────────────────────────
+    # Ищем паттерн: paragraph, оканчивающийся на ':', за ним >= 2 paragraph'ов
+    # длиной <= 200 символов, оканчивающихся на ';' (или последний на '.').
+    elements = _promote_semicolon_lists(elements)
+
+    # ── Автоматическое оглавление ─────────────────────────────────────
+    # Если в документе уже есть toc_heading — оставляем как есть.
+    # Если нет — вставляем искусственный toc_heading в самое начало.
+    has_toc = any(e.get("type") == "toc_heading" for e in elements)
+    if not has_toc:
+        elements.insert(0, {"type": "toc_heading", "text": "СОДЕРЖАНИЕ"})
+
     return elements
+
+
+def _promote_semicolon_lists(elements: list) -> list:
+    """
+    Постпроход: находит блоки вида
+        paragraph заканчивается на ':'    ← анкор
+        paragraph заканчивается на ';'   }
+        paragraph заканчивается на ';'   }  >= 2 строки
+        ...
+        paragraph заканчивается на '.'   }  (последний)
+    и переводит строки-кандидаты в list_item.
+    """
+    n = len(elements)
+    result = list(elements)  # копия, пометим индексы для замены
+
+    i = 0
+    while i < n:
+        elem = result[i]
+        # Анкор: paragraph, оканчивающийся на ':'
+        if (elem.get("type") == "paragraph"
+                and elem.get("text", "").rstrip().endswith(":")):
+            # Считаем кандидатов подряд
+            j = i + 1
+            candidates = []
+            while j < n:
+                candidate = result[j]
+                ctype = candidate.get("type", "")
+                ctext = candidate.get("text", "").strip()
+                # Принимаем только paragraph без номера в начале
+                if ctype != "paragraph":
+                    break
+                if re.match(r"^\d+\.", ctext):
+                    break
+                # Строка-кандидат: заканчивается на ';' или (последняя) на '.'
+                if ctext.endswith(";") or ctext.endswith("."):
+                    if len(ctext) <= 220:
+                        candidates.append(j)
+                        if ctext.endswith("."):
+                            j += 1
+                            break
+                    else:
+                        break
+                else:
+                    break
+                j += 1
+
+            if len(candidates) >= 2:
+                for ci in candidates:
+                    result[ci] = {
+                        "type": "list_item",
+                        "text": result[ci]["text"],
+                    }
+        i += 1
+
+    return result

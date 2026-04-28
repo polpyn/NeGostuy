@@ -7,6 +7,7 @@ import os
 import time
 import shutil
 import tempfile
+import re
 from collections import Counter
 
 from docx import Document
@@ -21,7 +22,8 @@ from .classifier import classify_element_simple, classify_all_from_blocks
 from .formatter import create_gost_document
 from .ai_postprocess import improve_doc_structure_with_ai
 from .kursovaya_classifier import classify_kursovaya_blocks
-from .kursovaya_formatter import create_kursovaya_document
+from .kursovaya_formatter import create_kursovaya_document, _patch_toc_and_hyperlink_styles
+from .bibliography_ai_check import extract_bibliography_entries, check_bibliography_entries_with_ai
 
 
 # Параметры ГОСТ для проверки
@@ -90,8 +92,46 @@ def check_gost_compliance(p, elem_type):
     if elem_type == "text" and p.get("centered"):
         warnings.append('Основной текст выровнен по центру → должен быть по ширине')
 
-    if elem_type == "heading" and not p.get("centered") and not p.get("bold"):
-        warnings.append('Заголовок не выделен (не жирный и не по центру)')
+    # Пунктуация в списках
+    if elem_type == "list_item":
+        t = (p.get("text") or "").strip()
+        is_numbered = bool(p.get("has_numbering")) or bool(re.match(r"^\d+\.\s+", t))
+        if t:
+            if is_numbered:
+                if not t.endswith("."):
+                    errors.append('Нумерованный пункт списка должен заканчиваться "."')
+            else:
+                if not t.endswith(";"):
+                    errors.append("Пункт маркированного списка должен заканчиваться символом ';'")
+
+    if elem_type == "heading":
+        text = (p.get("text") or "")
+        tl = text.lower().strip()
+        _SPECIAL_CAPS = {
+            'введение', 'заключение', 'выводы', 'содержание', 'оглавление',
+            'аннотация', 'abstract', 'список литературы',
+            'список использованных источников',
+            'список использованной литературы',
+            'список источников', 'библиографический список',
+        }
+        is_special = tl in _SPECIAL_CAPS
+        if is_special:
+            if not text.isupper():
+                errors.append(
+                    f'Заголовок «{text}» должен быть написан ЗАГЛАВНЫМИ буквами'
+                )
+            if not p.get("bold"):
+                errors.append(
+                    f'Заголовок «{text}» должен быть жирным'
+                )
+            if not p.get("centered"):
+                errors.append(
+                    f'Заголовок «{text}» должен быть выровнен по центру'
+                )
+        else:
+            # Общая проверка для прочих заголовков
+            if not p.get("centered") or not p.get("bold"):
+                warnings.append('Заголовок не выделен (не жирный и/или не по центру)')
 
     # Статус
     if errors:
@@ -157,6 +197,39 @@ def analyze_document(file_path, template_path=None, zachet_number=None, doc_type
                     "description": err,
                 })
 
+        # === AI-ПРОВЕРКА БИБЛИОГРАФИИ (затекстовый список в конце) ===
+        try:
+            para_texts = [pp.get("text", "") for pp in paragraphs]
+            bib_entries = extract_bibliography_entries(para_texts)
+            bad, bib_err = check_bibliography_entries_with_ai(bib_entries)
+            if bib_err:
+                # Не фейлим обработку документа: просто добавим предупреждение в отчёт
+                errors_list.append({
+                    "type": "bibliography_link_format",
+                    "description": f"AI проверка библиографии недоступна: {bib_err}",
+                })
+            else:
+                for it in bad:
+                    idx = it.get("index")
+                    issues = it.get("issues") or []
+                    if not issues:
+                        continue
+                    descr = "Библиография: " + "; ".join(str(x) for x in issues)[:900]
+                    errors_list.append({
+                        "type": "bibliography_link_format",
+                        "description": descr,
+                    })
+                    # Привяжем к элементу, чтобы отображалось в карточках
+                    for ed in elements_detail:
+                        if ed.get("type") in {"text", "list_item"} and ed.get("text") and str(ed.get("text", "")).startswith(str(para_texts[idx])[:30]):
+                            # best-effort: добавим как error
+                            ed["status"] = "error"
+                            ed.setdefault("errors", []).append(descr)
+                            break
+        except Exception as _exc:
+            # Тихий fallback
+            pass
+
         # Поля страницы
         margin_errors = check_page_margins(doc)
         total_errors += len(margin_errors)
@@ -191,8 +264,17 @@ def analyze_document(file_path, template_path=None, zachet_number=None, doc_type
             # ── Курсовая работа ────────────────────────────────────────
             output_path = os.path.join(output_dir, f"{base_name}_kursovaya.docx")
             kursovaya_elements = classify_kursovaya_blocks(blocks, paragraphs)
-            create_kursovaya_document(kursovaya_elements, output_path)
-            ai_postprocess = {}
+            create_kursovaya_document(
+                kursovaya_elements,
+                output_path,
+                template_path=template_path,
+                zachet_number=zachet_number,
+            )
+            ai_postprocess = improve_doc_structure_with_ai(output_path)
+            # LLM-постобработка может пересобрать runs и «потерять» прямой w:color,
+            # из-за чего текст снова наследует themeColor из стилей шаблона (синий).
+            # Патч styles.xml безопасен и идемпотентен — повторяем после AI.
+            _patch_toc_and_hyperlink_styles(output_path)
             print(f"✅ Курсовая отформатирована: {output_path}")
         else:
             # ── ГОСТ (исходный режим) ──────────────────────────────────

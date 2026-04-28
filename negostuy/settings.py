@@ -6,6 +6,8 @@ from pathlib import Path
 import os
 import mimetypes
 
+from dotenv import load_dotenv
+
 # Эти строки помогут туннелю передавать файлы без обрывов
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CSRF_TRUSTED_ORIGINS = [
@@ -17,6 +19,10 @@ mimetypes.add_type("text/css", ".css", True)
 mimetypes.add_type("text/javascript", ".js", True)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Важно: .env должен подхватываться не только через manage.py, но и при запуске
+# через Celery worker / gunicorn / wsgi/asgi.
+load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'negostuy-secret-key-change-in-production')
 
@@ -176,8 +182,17 @@ ENABLE_ASYNC_PROCESSING = os.getenv('ENABLE_ASYNC_PROCESSING', '0').lower() in (
 # ============================================================
 AI_POSTPROCESS_ENABLED = os.getenv('AI_POSTPROCESS_ENABLED', '1')
 
-# Провайдер: 'gemini' (по умолчанию, если задан ключ), 'ollama' или 'auto'.
+# Провайдер: 'gemini' (по умолчанию, если задан ключ), 'openrouter', 'gigachat', 'ollama' или 'auto'.
 AI_PROVIDER = os.getenv('AI_PROVIDER', 'auto').strip().lower()
+
+# AI_FALLBACK_DISABLED=1 — использовать только primary провайдера, не пытаться резервных.
+# Полезно, когда primary стабильно отвечает, а резерв (например, Gemini) сейчас лежит
+# и тянет ретраями по 60 сек, превращая один запрос в 30 минут ожидания.
+AI_FALLBACK_DISABLED = os.getenv('AI_FALLBACK_DISABLED', '0')
+
+# При primary=gigachat по умолчанию НЕ ходим в Gemini как резерв (см. _fallback_chain).
+# Если хочется обратного — выставите AI_GEMINI_FALLBACK_FROM_GIGACHAT=1.
+AI_GEMINI_FALLBACK_FROM_GIGACHAT = os.getenv('AI_GEMINI_FALLBACK_FROM_GIGACHAT', '0')
 
 # Google Gemini (AI Studio). Бесплатный лимит для gemini-2.5-flash.
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
@@ -189,9 +204,11 @@ GEMINI_BASE_URL = os.getenv(
 # HTTP(S) прокси для Gemini (нужен из РФ). Пример: http://user:pass@host:port
 GEMINI_PROXY = os.getenv('GEMINI_PROXY', '').strip()
 # Повтор при 503/429 и т.п. (иначе «первое окно» с началом документа может остаться пустым).
-GEMINI_MAX_RETRIES = int(os.getenv('GEMINI_MAX_RETRIES', '5'))
+# Дефолт 2 — чтобы при недоступном Gemini весь прогон не залипал на 30+ минут
+# (8 ретраев × до 60 секунд таймаута на каждое из 4 окон).
+GEMINI_MAX_RETRIES = int(os.getenv('GEMINI_MAX_RETRIES', '2'))
 GEMINI_RETRY_BACKOFF_SEC = float(os.getenv('GEMINI_RETRY_BACKOFF_SEC', '2'))
-GEMINI_RETRY_MAX_WAIT_SEC = float(os.getenv('GEMINI_RETRY_MAX_WAIT_SEC', '60'))
+GEMINI_RETRY_MAX_WAIT_SEC = float(os.getenv('GEMINI_RETRY_MAX_WAIT_SEC', '20'))
 
 # OpenRouter — работает без VPN из РФ, даёт бесплатный лимит.
 # Ключ: https://openrouter.ai/keys
@@ -201,6 +218,21 @@ OPENROUTER_TIMEOUT = int(os.getenv('OPENROUTER_TIMEOUT', '120'))
 OPENROUTER_BASE_URL = os.getenv(
     'OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'
 )
+
+# GigaChat (Сбер)
+GIGACHAT_AUTH_KEY = os.getenv('GIGACHAT_AUTH_KEY', '').strip()
+GIGACHAT_SCOPE = os.getenv('GIGACHAT_SCOPE', 'GIGACHAT_API_PERS').strip()
+GIGACHAT_MODEL = os.getenv('GIGACHAT_MODEL', 'GigaChat').strip()
+# Таймаут на один HTTP-запрос к GigaChat. 60 сек достаточно для окна 50 абзацев;
+# если зависает — лучше быстро отвалиться, чем держать пользователя 2 минуты.
+GIGACHAT_TIMEOUT = int(os.getenv('GIGACHAT_TIMEOUT', '60'))
+GIGACHAT_BASE_URL = os.getenv(
+    'GIGACHAT_BASE_URL', 'https://gigachat.devices.sberbank.ru/api/v1'
+).rstrip('/')
+GIGACHAT_OAUTH_URL = os.getenv(
+    'GIGACHAT_OAUTH_URL', 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth'
+).rstrip('/')
+GIGACHAT_INSECURE_SSL = os.getenv('GIGACHAT_INSECURE_SSL', '0').lower() in ('1', 'true', 'yes', 'on')
 
 # Локальный Ollama — используется как fallback.
 OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://127.0.0.1:11434')

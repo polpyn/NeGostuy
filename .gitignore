@@ -46,3 +46,11 @@ debug_frame/
 
 # Дампы LLM (AI_POSTPROCESS_DEBUG / TRACE)
 debug_ai/
+
+# Локальные артефакты анализа/дебага
+_analyze_out_after*.txt
+debug_docx*.py
+test_kursovaya_output.docx
+
+# Временные файлы MS Office
+~$*.docx

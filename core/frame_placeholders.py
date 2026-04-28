@@ -153,6 +153,32 @@ def _normalize_document_section_xml(xml: str) -> str:
     return xml
 
 
+def _normalize_page_number_start(xml: str) -> str:
+    """
+    Нормализует старт нумерации страниц. Некоторые рамки содержат:
+      <w:pgNumType w:start="2"/>
+    Для вашего шаблона нужно: старт с 2 (титульник без номера, далее 2,3,4...).
+    """
+    # Если start отсутствует — ставим 2. Если присутствует, но 0/отрицательный — тоже ставим 2.
+    if re.search(r"<w:pgNumType\b", xml, flags=re.IGNORECASE):
+        xml = re.sub(
+            r'(<w:pgNumType\b[^>]*?)\s+w:start="(?:0|-\d+)"',
+            r'\g<1> w:start="2"',
+            xml,
+            flags=re.IGNORECASE,
+        )
+        if not re.search(r"<w:pgNumType\b[^>]*\bw:start=", xml, flags=re.IGNORECASE):
+            xml = re.sub(
+                r"(<w:pgNumType\b)",
+                r'\1 w:start="2"',
+                xml,
+                flags=re.IGNORECASE,
+            )
+    # Если pgNumType есть, но start задан странно (0 или отриц.), удаляем start целиком
+    # (оставляем как есть, кроме случая выше)
+    return xml
+
+
 def patch_docx_headers(docx_path: str, zachet_number: str | None = None) -> None:
     """Правит word/header*.xml и sectPr в document.xml (штамп, поля, единый колонтитул)."""
     from .frame_debug import (
@@ -189,6 +215,7 @@ def patch_docx_headers(docx_path: str, zachet_number: str | None = None) -> None
                 elif info.filename == "word/document.xml":
                     text = data.decode("utf-8")
                     text = _normalize_document_section_xml(text)
+                    text = _normalize_page_number_start(text)
                     zn = (zachet_number or "").strip()
                     text = _replace_nomer(text, zn)
                     data = text.encode("utf-8")

@@ -203,9 +203,13 @@ async function uploadFile(file) {
     );
 
     const formData = new FormData();
+    const modeRadio = document.querySelector('input[name="tp_mode"]:checked');
+    const workType = modeRadio ? modeRadio.value : 'gost';
+    console.log('Тип работы:', workType);
+
     formData.append('student_id', zachet);
     formData.append('zachet_number', zachet);
-    formData.append('work_type', 'coursework');
+    formData.append('work_type', workType);
     formData.append('file', file);
 
     console.log('Рамка: используется ramka.docx по умолчанию на сервере');

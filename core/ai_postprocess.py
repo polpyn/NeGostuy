@@ -26,8 +26,11 @@ import json
 import os
 import re
 import time
+import ssl
+import uuid
 import urllib.error
 import urllib.request
+import urllib.parse
 from dataclasses import dataclass
 from typing import Any
 
@@ -40,6 +43,10 @@ from docx.oxml.ns import qn
 
 NUMERIC_RE = re.compile(r"^\s*(\d+(?:\.\d+)*)\.\s+(.+)$")
 BULLET_RE = re.compile(r"^\s*[—\-•]\s+(.+)$")
+# Подзаголовки разделов вида «1.1 Наименование» / «2.3 Что-то» — БЕЗ точки после номера.
+# В типичном курсовом ВКР такие строки — это подразделы, а не пункты списка,
+# и их нельзя превращать в «— 1.1 Наименование…».
+SUBSECTION_NO_DOT_RE = re.compile(r"^\s*(\d+\.\d+(?:\.\d+){0,2})\s+(\S.+?)\s*$")
 SUBLIST_PARENT_RE = re.compile(
     r"(преимущества|недостатки|методы|виды|этапы|включает|свойства|принципы|задачи|функции|особенности|признаки)\s*:\s*$",
     re.IGNORECASE,
@@ -338,6 +345,13 @@ _PROMPT_RULES = """Тебе дают окно абзацев из докумен
    Если после такого заголовка идут подпункты вида "1. Prefix:", "2. Prefix:", "3. Prefix:" —
    это СТОПРОЦЕНТНО заголовок (bold_full), а не обычный пункт.
 
+1а. ПОДРАЗДЕЛЫ ВКР/КУРСОВОЙ. Строки «1.1 Наименование и область применения», «1.2 Основание для разработки»,
+   «2.1 …», «1.4.1 …» — это ПОДРАЗДЕЛЫ внутри раздела «1. Техническое задание» / «2. …», а не пункты перечня.
+   Никогда не используй для них to_dash / to_bullet. Допустимо: bold_full с indent_level 0
+   (или просто пропусти и не возвращай action — программа уже оформит подзаголовок жирным/как Heading).
+   Идущий ПОД таким подзаголовком связный абзац-пояснение («В Проект представляет собой …», «Основанием для разработки является …»)
+   — это обычная проза, его тоже НЕ конвертируй в «— …» и НЕ включай в actions.
+
 2. ПОДПУНКТЫ С ПОЯСНЕНИЕМ. Абзацы вида "N. Prefix: пояснение..." ПОД заголовком секции —
    это элементы вложенного списка. Действие: to_dash, indent_level = 2 (отступ 2.5 см под «N. …»).
    Программа сама оставит часть до ":" жирной внутри строки с тире.
@@ -354,6 +368,16 @@ _PROMPT_RULES = """Тебе дают окно абзацев из докумен
    (часто начинается с «Нужно», «Не …», «Важно», «Следует»; разворачивает ту же мысль, а не новый параллельный тезис) —
    это НЕ отдельный пункт списка. Не применяй to_dash/to_bullet: оставь абзац обычным текстом (пропусти в actions).
    Список из тире допустим только если подряд идут ДВА и больше однотипных коротких тезиса ИЛИ это явные подпункты вида «N. …» под секцией.
+
+3б. СТРОКА, ОКАНЧИВАЮЩАЯСЯ НА «:», — ВВОДНАЯ ЭТИКЕТКА, А НЕ ПУНКТ. Примеры:
+   «Функционал включает:», «Чат-бот должен содержать следующие функции:», «Цель бота — … Функционал включает:».
+   Это вводит идущий ниже перечень, но сама не пункт. Для таких строк используй bold_prefix (indent_level 0)
+   ИЛИ просто пропусти в actions — НИКОГДА не возвращай to_dash / to_bullet.
+
+3в. ЗАВЕРШАЮЩИЙ АБЗАЦ ПОСЛЕ ПЕРЕЧНЯ. После списка из «— …» обычно идёт связный итог-предложение, например:
+   «Бот обеспечивает удобное сохранение и обработку пользовательских данных, предоставляя интуитивный интерфейс.»
+   или «К чат-боту должна быть написана подробная документация: руководство пользователя и пояснительная записка.».
+   Это ПРОЗА, не элемент того же списка. Не возвращай to_dash/to_bullet — пропусти в actions.
 
 4. ПОДЗАГОЛОВКИ-ЭТИКЕТКИ. Абзац вида "Суть:", "Главная задача:", "Важное наблюдение:",
    "Преимущества:", "Недостатки:" (метка с двоеточием и пояснением) — подзаголовок-этикетка внутри секции.
@@ -470,7 +494,7 @@ _GEMINI_RESPONSE_SCHEMA = {
 # HTTP УТИЛИТЫ (с поддержкой прокси)
 # ============================================================
 
-def _make_opener(proxy_url: str = ""):
+def _make_opener(proxy_url: str = "", *, insecure_ssl: bool = False):
     """
     Создаёт urllib opener. Если задан proxy_url — все запросы пойдут через него.
     Иначе использует системные HTTP_PROXY / HTTPS_PROXY (или прямое соединение).
@@ -481,8 +505,10 @@ def _make_opener(proxy_url: str = ""):
             "http": proxy_url,
             "https": proxy_url,
         }))
-        return urllib.request.build_opener(*handlers)
-    return urllib.request.build_opener()
+    if insecure_ssl:
+        ctx = ssl._create_unverified_context()
+        handlers.append(urllib.request.HTTPSHandler(context=ctx))
+    return urllib.request.build_opener(*handlers)
 
 
 def _gemini_quota_exhausted_error(err: str) -> bool:
@@ -503,6 +529,8 @@ def _http_post_json(
     headers: dict[str, str],
     timeout: int,
     proxy_url: str = "",
+    *,
+    insecure_ssl: bool = False,
 ) -> tuple[str, str, int]:
     """
     Возвращает (response_text, error, http_status).
@@ -514,7 +542,7 @@ def _http_post_json(
         headers={"Content-Type": "application/json", **headers},
         method="POST",
     )
-    opener = _make_opener(proxy_url)
+    opener = _make_opener(proxy_url, insecure_ssl=insecure_ssl)
     try:
         with opener.open(req, timeout=timeout) as resp:
             return resp.read().decode("utf-8"), "", resp.status
@@ -688,6 +716,140 @@ def _call_openrouter(prompt: str) -> tuple[list[dict[str, Any]], str, dict[str, 
 
 
 # ============================================================
+# GIGACHAT API (Сбер)
+# ============================================================
+
+_GIGACHAT_TOKEN: str | None = None
+_GIGACHAT_TOKEN_EXPIRES_AT: float = 0.0
+
+
+def _gigachat_get_token() -> tuple[str, str]:
+    """
+    Возвращает (token, err). Кэширует токен до истечения.
+    """
+    global _GIGACHAT_TOKEN, _GIGACHAT_TOKEN_EXPIRES_AT
+
+    now = time.time()
+    if _GIGACHAT_TOKEN and now < (_GIGACHAT_TOKEN_EXPIRES_AT - 20):
+        return _GIGACHAT_TOKEN, ""
+
+    auth_key = (getattr(settings, "GIGACHAT_AUTH_KEY", "") or "").strip()
+    if not auth_key:
+        return "", "GIGACHAT_AUTH_KEY is empty"
+
+    scope = (getattr(settings, "GIGACHAT_SCOPE", "") or "GIGACHAT_API_PERS").strip()
+    oauth_url = (getattr(settings, "GIGACHAT_OAUTH_URL", "") or "").strip().rstrip("/")
+    timeout = int(getattr(settings, "GIGACHAT_TIMEOUT", 120))
+    insecure = bool(getattr(settings, "GIGACHAT_INSECURE_SSL", False))
+    if not oauth_url:
+        oauth_url = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+
+    # OAuth endpoint expects form-encoded body.
+    # RqUID ОБЯЗАТЕЛЬНО валидный UUID4 — иначе сервер возвращает 400 Bad Request.
+    body = f"scope={urllib.parse.quote(scope)}".encode("utf-8")
+    req = urllib.request.Request(
+        oauth_url,
+        data=body,
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "application/json",
+            "RqUID": str(uuid.uuid4()),
+            "Authorization": f"Basic {auth_key}",
+        },
+        method="POST",
+    )
+    try:
+        context = ssl._create_unverified_context() if insecure else None
+        with urllib.request.urlopen(req, timeout=timeout, context=context) as resp:
+            raw = resp.read().decode("utf-8", errors="replace")
+    except Exception as exc:
+        return "", f"gigachat oauth error: {exc}"
+
+    try:
+        data = json.loads(raw)
+    except Exception as exc:
+        return "", f"gigachat oauth invalid json: {exc}"
+
+    token = (data or {}).get("access_token") or ""
+    expires_at = (data or {}).get("expires_at")
+    if not token:
+        return "", f"gigachat oauth no access_token: {raw[:400]}"
+    # expires_at у GigaChat часто в ms unix
+    try:
+        exp = float(expires_at)
+        if exp > 10_000_000_000:  # ms
+            exp = exp / 1000.0
+        _GIGACHAT_TOKEN_EXPIRES_AT = exp
+    except Exception:
+        _GIGACHAT_TOKEN_EXPIRES_AT = time.time() + 25 * 60
+    _GIGACHAT_TOKEN = token
+    return token, ""
+
+
+def _call_gigachat(prompt: str) -> tuple[list[dict[str, Any]], str, dict[str, Any]]:
+    """
+    Используем /chat/completions (OpenAI-совместимый формат у GigaChat).
+    Требуем JSON-объект в ответе, как и в OpenRouter.
+    """
+    token, tok_err = _gigachat_get_token()
+    if tok_err:
+        return [], tok_err, {}
+
+    base_url = (getattr(settings, "GIGACHAT_BASE_URL", "") or "").strip().rstrip("/")
+    if not base_url:
+        base_url = "https://gigachat.devices.sberbank.ru/api/v1"
+    model = (getattr(settings, "GIGACHAT_MODEL", "") or "GigaChat").strip()
+    timeout = int(getattr(settings, "GIGACHAT_TIMEOUT", 120))
+    insecure = bool(getattr(settings, "GIGACHAT_INSECURE_SSL", False))
+
+    url = f"{base_url}/chat/completions"
+    body = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": _SYSTEM_INSTRUCTION},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.1,
+        "response_format": {"type": "json_object"},
+    }
+    t0 = time.time()
+    raw, err, status = _http_post_json(
+        url,
+        body,
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=timeout,
+        proxy_url="",
+        insecure_ssl=insecure,
+    )
+    elapsed_ms = int((time.time() - t0) * 1000)
+    meta: dict[str, Any] = {"request_ms": elapsed_ms, "model": model, "status": status, "provider": "gigachat"}
+    if err:
+        meta["error_code"] = status
+        return [], f"gigachat {err}", meta
+
+    try:
+        data = json.loads(raw)
+    except Exception as exc:
+        meta["raw_preview"] = raw[:2000]
+        return [], f"gigachat invalid outer json: {exc}", meta
+
+    choices = data.get("choices") or []
+    if not choices:
+        meta["raw_preview"] = raw[:2000]
+        return [], "gigachat no choices", meta
+    msg = (choices[0].get("message") or {}).get("content", "")
+    meta["model_text_preview"] = msg[:4000]
+    meta["llm_inner_text_full"] = msg
+    if not msg.strip():
+        return [], "gigachat empty content", meta
+
+    actions = _extract_actions_from_text(msg)
+    if not actions:
+        return [], "gigachat parse empty", meta
+    return actions, "", meta
+
+
+# ============================================================
 # OLLAMA API (fallback)
 # ============================================================
 
@@ -780,8 +942,10 @@ def _resolve_provider() -> str:
     Цепочка fallback в _fallback_chain не включает Ollama — только OpenRouter и Gemini.
     """
     provider = (getattr(settings, "AI_PROVIDER", "auto") or "auto").strip().lower()
-    if provider in {"gemini", "ollama", "openrouter"}:
+    if provider in {"gemini", "ollama", "openrouter", "gigachat"}:
         return provider
+    if (getattr(settings, "GIGACHAT_AUTH_KEY", "") or "").strip():
+        return "gigachat"
     if (getattr(settings, "OPENROUTER_API_KEY", "") or "").strip():
         return "openrouter"
     if (getattr(settings, "GEMINI_API_KEY", "") or "").strip():
@@ -792,19 +956,36 @@ def _resolve_provider() -> str:
 _PROVIDER_CALLS = {
     "gemini": _call_gemini,
     "openrouter": _call_openrouter,
+    "gigachat": _call_gigachat,
     "ollama": _call_ollama,
 }
 
 
 def _fallback_chain(primary: str) -> list[str]:
-    """Порядок попыток: сначала primary, потом OpenRouter/Gemini при наличии ключей (без Ollama)."""
+    """
+    Порядок попыток: сначала primary, потом резервные провайдеры при наличии ключей
+    (без Ollama). По AI_FALLBACK_DISABLED=1 fallback отключается полностью —
+    только primary, что важно при долгих ретраях недоступного Gemini.
+    Если primary='gigachat', Gemini-fallback отключается по умолчанию,
+    т.к. ретраи 503/таймаутов в Gemini растягивают один запрос на десятки минут.
+    """
+    if str(getattr(settings, "AI_FALLBACK_DISABLED", "0")).lower() in {"1", "true", "yes", "on"}:
+        return [primary]
     chain = [primary]
-    for candidate in ("openrouter", "gemini"):
+    skip_gemini_fallback = (primary == "gigachat") and str(
+        getattr(settings, "AI_GEMINI_FALLBACK_FROM_GIGACHAT", "0")
+    ).lower() not in {"1", "true", "yes", "on"}
+    for candidate in ("gigachat", "openrouter", "gemini"):
         if candidate == primary:
             continue
-        if candidate == "gemini" and not (getattr(settings, "GEMINI_API_KEY", "") or "").strip():
-            continue
+        if candidate == "gemini":
+            if skip_gemini_fallback:
+                continue
+            if not (getattr(settings, "GEMINI_API_KEY", "") or "").strip():
+                continue
         if candidate == "openrouter" and not (getattr(settings, "OPENROUTER_API_KEY", "") or "").strip():
+            continue
+        if candidate == "gigachat" and not (getattr(settings, "GIGACHAT_AUTH_KEY", "") or "").strip():
             continue
         chain.append(candidate)
     return chain
@@ -819,8 +1000,10 @@ def _print_llm_route_banner() -> None:
     primary = _resolve_provider()
     gemini_m = (getattr(settings, "GEMINI_MODEL", "") or "").strip() or "gemini-2.5-flash"
     or_m = (getattr(settings, "OPENROUTER_MODEL", "") or "").strip() or "google/gemini-2.5-flash"
+    giga_m = (getattr(settings, "GIGACHAT_MODEL", "") or "").strip() or "GigaChat"
     has_gem_key = bool((getattr(settings, "GEMINI_API_KEY", "") or "").strip())
     has_or_key = bool((getattr(settings, "OPENROUTER_API_KEY", "") or "").strip())
+    has_giga_key = bool((getattr(settings, "GIGACHAT_AUTH_KEY", "") or "").strip())
     explicit = (getattr(settings, "AI_PROVIDER", "auto") or "auto").strip().lower()
 
     if primary == "gemini":
@@ -834,11 +1017,13 @@ def _print_llm_route_banner() -> None:
                 "Нужен только Google и переменная GEMINI_MODEL — поставьте AI_PROVIDER=gemini "
                 "(или уберите OPENROUTER_API_KEY)."
             )
+    elif primary == "gigachat":
+        print(f"  [LLM] Запросы: GigaChat (Сбер), модель `{giga_m}`.")
     else:
         ollama_m = (getattr(settings, "OLLAMA_MODEL", "") or "").strip() or "(OLLAMA_MODEL пуст)"
         print(f"  [LLM] Запросы: Ollama, модель `{ollama_m}`.")
-    if not has_or_key and not has_gem_key:
-        print("  [LLM] Нет ни OPENROUTER_API_KEY, ни GEMINI_API_KEY — LLM не сможет ответить.")
+    if not has_or_key and not has_gem_key and not has_giga_key:
+        print("  [LLM] Нет ни OPENROUTER_API_KEY, ни GEMINI_API_KEY, ни GIGACHAT_AUTH_KEY — LLM не сможет ответить.")
 
 
 def _call_llm(prompt: str) -> tuple[list[dict[str, Any]], str, dict[str, Any]]:
@@ -996,6 +1181,89 @@ def _skip_listify_after_goal_essence(
     return False
 
 
+_RU_VERBISH_RE = re.compile(
+    r"\b("
+    # модальные/связочные — включая ВСЕ формы «должен/должна/должно/должны»
+    r"должен|должн[аоы]?|может|могут|нужно|нужны|являет|являют|являлся|являлась|"
+    r"являются|является|это|были|был|была|"
+    # глаголы требования и наличия (частые в разделах «Требования к …»)
+    r"требует|требуется|требуются|требуют|"
+    r"необходим|необходима|необходимо|необходимы|"
+    r"достаточно|"
+    # типичные глаголы из учебных текстов / ВКР (стемы — совпадают как полные слова)
+    r"обеспечива|представля|предоставля|содерж|включа|состоит|зависит|"
+    r"позволя|использ|предназнач|разработ|реализова|подразумева|"
+    r"описыва|формиру|обрабатыва|сохраня|выполня|осуществля|"
+    # биография/история
+    r"родил|родил[ао]?с|родился|родилась|происход|созда|участв|"
+    r"присоед|погиб|считал|признал|заключил|подписан"
+    r")\b",
+    re.IGNORECASE,
+)
+
+
+def _numbered_looks_like_heading(content: str) -> bool:
+    """
+    Короткая строка после «N.» часто является заголовком раздела, а не пунктом списка.
+    Пример: «1. Техническое задание».
+    """
+    c = (content or "").strip()
+    if not c:
+        return False
+    if len(c) > 90:
+        return False
+    if ":" in c:
+        return False
+    if c.endswith("."):
+        return False
+    if _RU_VERBISH_RE.search(c):
+        return False
+    return True
+
+
+def _numbered_looks_like_prose_sentence(content: str) -> bool:
+    """
+    Нумерованная строка вида «2. Текумсе родился ...» — это предложение/абзац,
+    не список. Такие строки нельзя превращать в «— ...».
+    """
+    c = (content or "").strip()
+    if not c:
+        return False
+    if len(c) >= 110:
+        return True
+    # Если есть глагольная «проза» и точка в конце — почти наверняка не перечень
+    if c.endswith(".") and _RU_VERBISH_RE.search(c):
+        return True
+    # Несколько предложений в одной строке
+    if c.count(".") >= 2 and len(c) > 70:
+        return True
+    return False
+
+
+def _looks_like_prose_paragraph(text: str) -> bool:
+    """
+    Связный абзац без ведущего «N.» / маркера — это обычный текст, а не пункт
+    перечня. Защищаемся от типичной ошибки LLM, когда вся «начинка» под
+    заголовком «1. Техническое задание» помечается to_dash.
+
+    Используется только в else-ветке (когда нет ни NUMERIC_RE, ни BULLET_RE),
+    поэтому считаем, что абзац уже без ведущего номера.
+    """
+    t = (text or "").strip()
+    if not t:
+        return False
+    # Длинный абзац — почти наверняка проза.
+    if len(t) >= 110:
+        return True
+    # Несколько предложений подряд — явный связный текст.
+    if t.count(".") >= 2 and len(t) > 60:
+        return True
+    # Точка в конце + глагольная основа = прозаическое предложение.
+    if t.endswith(".") and _RU_VERBISH_RE.search(t) and len(t) > 50:
+        return True
+    return False
+
+
 def _apply_single_action(doc: Document, action: dict[str, Any]) -> dict[str, Any] | None:
     idx = action["index"]
     if idx < 0 or idx >= len(doc.paragraphs):
@@ -1024,6 +1292,34 @@ def _apply_single_action(doc: Document, action: dict[str, Any]) -> dict[str, Any
         return {"index": idx, "action": kind, "indent_level": 0, "old_text": old_text}
 
     if kind == "bold_full":
+        # Пункты перечня «— …» — не заголовки; жирность недопустима,
+        # а _apply_structure_style сломает правильный left_indent=1.25 cm.
+        if BULLET_RE.match(old_text):
+            return None
+        # Если абзац уже оформлен как специальный заголовок (по центру, Heading 1,
+        # текст полностью заглавными) — не трогаем его форматирование, только жирним.
+        _para_style = (para.style.name or "")
+        _already_center = (
+            para.paragraph_format.alignment == WD_ALIGN_PARAGRAPH.CENTER
+        )
+        _is_special_heading = (
+            _para_style.startswith("Heading 1")
+            or (old_text == old_text.upper() and len(old_text) <= 120 and _already_center)
+        )
+        if _is_special_heading:
+            # Просто убедимся что все runs жирные; не меняем выравнивание и отступы
+            all_bold = all(
+                (r.bold is True) for r in para.runs if r.text.strip()
+            )
+            if all_bold:
+                return None  # уже жирный — ничего делать не надо
+            _replace_runs(para, [(old_text, True)])
+            # Восстанавливаем центрирование и убираем отступ красной строки
+            para.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            para.paragraph_format.left_indent = Cm(0)
+            para.paragraph_format.first_line_indent = Cm(0)
+            return {"index": idx, "action": kind, "indent_level": 0, "old_text": old_text}
+
         mnum = NUMERIC_RE.match(old_text)
         is_numbered = bool(mnum)
         content = mnum.group(2).strip() if mnum else old_text
@@ -1091,6 +1387,9 @@ def _apply_single_action(doc: Document, action: dict[str, Any]) -> dict[str, Any
         return {"index": idx, "action": kind, "indent_level": level, "old_text": old_text}
 
     if kind == "bold_prefix":
+        # Пункты перечня «— …» — не заголовки; bold_prefix сломает форматирование.
+        if BULLET_RE.match(old_text):
+            return None
         mnum = NUMERIC_RE.match(old_text)
         if mnum and ":" in mnum.group(2):
             num, content = mnum.group(1), mnum.group(2).strip()
@@ -1118,60 +1417,64 @@ def _apply_single_action(doc: Document, action: dict[str, Any]) -> dict[str, Any
     if kind in {"to_bullet", "to_dash"}:
         if _skip_listify_after_goal_essence(doc, idx, old_text):
             return None
+        # Подзаголовок «1.1 Наименование», «1.2 Основание для разработки» и т.п. —
+        # это структура раздела, а не пункт перечня; не превращаем в «— ...».
+        if SUBSECTION_NO_DOT_RE.match(old_text):
+            return None
         marker = "—"
         m_num = NUMERIC_RE.match(old_text)
         m_bul = BULLET_RE.match(old_text)
         core: str | None = None
         if m_num:
-            core = m_num.group(2).strip()
+            core_candidate = m_num.group(2).strip()
+            # Защита от «кривого превращения» структуры в список:
+            # - короткие «N. Заголовок» не должны становиться «— заголовок;»
+            # - длинные прозаические предложения не должны становиться списком
+            if _numbered_looks_like_heading(core_candidate):
+                return None
+            if _numbered_looks_like_prose_sentence(core_candidate):
+                return None
+            core = core_candidate
         elif m_bul:
             core = m_bul.group(1).strip()
         else:
             stripped = old_text.strip()
             lev = int(level or 0)
+            # Метка-этикетка перед списком («Функционал включает:»,
+            # «Чат-бот должен содержать следующие функции:»,
+            # «Цель бота — упрощение … Функционал включает:») — это НЕ пункт
+            # списка, она сама вводит список. Никогда не превращаем в «— ...».
+            if stripped.endswith(":"):
+                return None
+            # Длинный связный абзац-проза без ведущего «N.» / маркера почти всегда
+            # это обычный текст пояснения, а не пункт списка. Запрещаем перевод
+            # в «— ...», даже если LLM указала indent_level >= 1.
+            if _looks_like_prose_paragraph(stripped):
+                return None
             if 0 < len(stripped) <= 400 and (
                 lev >= 1 or (lev == 0 and len(stripped) <= 280)
             ):
                 core = stripped
         if not core:
-            # Обычный прозаический абзац без нумерации — превращать в буллет
-            # опасно (часто ломает повествование). Откатываемся на bold_prefix,
-            # если есть короткий префикс с двоеточием. Иначе пропускаем.
-            if ":" in old_text:
-                head = old_text.split(":", 1)[0].strip()
-                if 0 < len(head) <= 80 and len(head.split()) <= 10:
-                    head_text, tail_text = old_text.split(":", 1)
-                    _replace_runs(
-                        para,
-                        [
-                            (head_text.strip() + ":", True),
-                            (" " + tail_text.lstrip(), False),
-                        ],
-                    )
-                    _apply_structure_style(para, indent_level=level)
-                    return {
-                        "index": idx,
-                        "action": "bold_prefix",
-                        "indent_level": level,
-                        "old_text": old_text,
-                        "fallback_from": kind,
-                    }
             return None
-        # Если остался префикс с двоеточием — оставим его жирным внутри буллета.
-        if ":" in core and 0 < core.index(":") <= 80:
-            head, tail = core.split(":", 1)
-            _replace_runs(
-                para,
-                [
-                    (f"{marker} ", False),
-                    (head.strip() + ":", True),
-                    (" " + tail.lstrip(), False),
-                ],
-            )
+        _replace_runs(para, [(f"{marker} {core}", False)])
+        if m_bul:
+            # Абзац уже был «— …» (kursovaya_formatter/formatter уже выставил
+            # правильный left_indent=1.25 cm и alignment=LEFT).
+            # Не перезаписываем структурный формат — иначе _apply_structure_style
+            # ставит indent_level*1.25 cm (при level=2 → 2.5 cm) и alignment=JUSTIFY,
+            # что удваивает отступ и меняет выравнивание.
+            # Только фиксируем межстрочный интервал и пространство вокруг абзаца.
+            para.paragraph_format.space_before = Pt(0)
+            para.paragraph_format.space_after = Pt(0)
+            para.paragraph_format.line_spacing = 1.5
+            eff_level = level if level > 0 else 1
         else:
-            _replace_runs(para, [(f"{marker} {core}", False)])
-        eff_level = level if level > 0 else 1
-        _apply_structure_style(para, indent_level=eff_level)
+            eff_level = level if level > 0 else 1
+            _apply_structure_style(para, indent_level=eff_level)
+            # Пункты перечня с тире всегда LEFT — при JUSTIFY Word растягивает
+            # пробел после «—» на неполных строках.
+            para.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
         return {"index": idx, "action": kind, "indent_level": eff_level, "old_text": old_text}
 
     if kind == "renumber":
@@ -1199,6 +1502,53 @@ def _apply_single_action(doc: Document, action: dict[str, Any]) -> dict[str, Any
 
 
 def _safe_apply_actions(doc: Document, actions: list[dict[str, Any]]) -> dict[str, Any]:
+    def _build_protected_index_sets(doc: Document) -> tuple[set[int], set[int]]:
+        """
+        Индексы абзацев, где нельзя превращать строки в списки/менять нумерацию.
+        В частности: «ПЕРЕЧЕНЬ СОКРАЩЕНИЙ» и «БИБЛИОГРАФИЧЕСКОЕ ОПИСАНИЕ».
+        """
+        abbrev_heads = {
+            "перечень сокращений",
+            "сокращения",
+            "обозначения",
+        }
+        biblio_heads = {
+            "библиографическое описание",
+            "библиографический список",
+            "список литературы",
+            "список использованных источников",
+            "список источников",
+            "список использованной литературы",
+        }
+        # Любой «крупный» заголовок, который обычно завершает эти разделы
+        stop_prefixes = ("приложени",)
+        stop_exact = {"введение", "заключение", "содержание", "оглавление"}
+
+        abbrev_idx: set[int] = set()
+        biblio_idx: set[int] = set()
+        mode: str = ""
+        for i, p in enumerate(doc.paragraphs):
+            t = (p.text or "").strip()
+            if not t:
+                continue
+            low = t.lower().strip()
+            if low in abbrev_heads:
+                mode = "abbrev"
+                continue
+            if low in biblio_heads:
+                mode = "biblio"
+                continue
+            # Выход из режима на явном крупном заголовке
+            if low in stop_exact or low.startswith(stop_prefixes) or re.match(r"^\d{1,2}(\.|\\s)\\s+\\S", t):
+                mode = ""
+                continue
+            if mode == "abbrev":
+                abbrev_idx.add(i)
+            elif mode == "biblio":
+                biblio_idx.add(i)
+        return abbrev_idx, biblio_idx
+
+    abbrev_idx, biblio_idx = _build_protected_index_sets(doc)
     changed = 0
     applied: list[dict[str, Any]] = []
     seen_idx: set[int] = set()
@@ -1207,6 +1557,13 @@ def _safe_apply_actions(doc: Document, actions: list[dict[str, Any]]) -> dict[st
         if not norm or norm["index"] in seen_idx:
             continue
         seen_idx.add(norm["index"])
+        # В перечне сокращений и библиографии не даём AI превращать строки в «— ...»,
+        # иначе появляется левый отступ ~2.5 см (indent_level=2) и «палочка»/маркер.
+        idx = norm["index"]
+        if idx in abbrev_idx and norm["action"] in {"to_dash", "to_bullet", "renumber"}:
+            continue
+        if idx in biblio_idx and norm["action"] in {"to_dash", "to_bullet"}:
+            continue
         result = _apply_single_action(doc, norm)
         if result is not None:
             changed += 1
